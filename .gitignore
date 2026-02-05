@@ -8,6 +8,9 @@
 *.pgm
 *.pdf
 
+### files ###
+*.zip
+
 ### C++ ###
 # Prerequisites
 *.d
