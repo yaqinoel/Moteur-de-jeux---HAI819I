@@ -46,10 +46,16 @@ unsigned int TextureFromFile(const char *path, const string &directory, bool gam
     return textureID;
 }
 
+Model::Model(bool gamma) {
+    std::cout<<"generate a empty model finished..." <<std::endl;
+}
+
 Model::Model(string const &path, bool gamma) : gammaCorrection(gamma) {
     loadModel(path);
     std::cout<<"load model finished..." <<std::endl;
 }
+
+
 
 // draws the model, and thus all its meshes
 void Model::Draw(Shader &shader) {

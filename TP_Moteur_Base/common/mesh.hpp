@@ -49,6 +49,8 @@ public:
 
     // render the mesh
     void Draw(Shader &shader);
+    void updateMesh();
+    void clearBuffers();
 
 private:
     // render data
