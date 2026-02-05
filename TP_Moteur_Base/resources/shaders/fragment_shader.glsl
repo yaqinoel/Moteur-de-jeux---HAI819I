@@ -25,4 +25,6 @@ void main(){
         } else {
                 color = texture(texture_diffuse3, UV);
         }
+
+
 }

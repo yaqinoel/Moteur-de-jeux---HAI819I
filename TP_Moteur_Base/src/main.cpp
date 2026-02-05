@@ -54,7 +54,7 @@ bool mouseClickDown = false;
 
 // 地形相关参数
 Model terrainModel;
-int resolution = 64;
+int resolution = 16;
 
 
 // 生成一个地形平面
@@ -264,7 +264,7 @@ int main( void )
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
+    // stbi_set_flip_vertically_on_load(true);
 
     // Create and compile our GLSL program from the shaders
     // -------------------------
