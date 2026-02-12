@@ -309,6 +309,7 @@ int main( void )
         // model.Draw(shader);
         terrainModel.Draw(shader);
 
+
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
