@@ -9,7 +9,7 @@
 *.pdf
 
 ### files ###
-*.zip
+#*.zip
 
 ### C++ ###
 # Prerequisites
