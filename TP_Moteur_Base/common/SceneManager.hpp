@@ -1,6 +1,7 @@
 #ifndef SCENEMANAGER_HPP
 #define SCENEMANAGER_HPP
 
+#include "Cone.hpp"
 #include "SceneNode.hpp"
 #include "shader.hpp"
 
@@ -13,7 +14,7 @@ public:
 
   void Update();
   void Draw(Shader &shader, const glm::mat4 &viewMatrix,
-            const glm::mat4 &projectionMatrix);
+            const glm::mat4 &projectionMatrix, const Cone &cone);
 
 private:
   SceneNode *m_root;

@@ -1,5 +1,8 @@
 #include "Time.hpp"
+// Include GLFW
+#include <GLFW/glfw3.h>
 
+float Time::CurrentTime = 0.0f;
 float Time::DeltaTime = 0.0f;
 float Time::m_LastFrameTime = 0.0f;
 float Time::m_LastFPSTime = 0.0f;
@@ -12,6 +15,7 @@ void Time::intialize() {
 
 void Time::Update() {
     float currentFrame = (float)glfwGetTime();
+    CurrentTime = currentFrame;
 
     // 计算两帧时间差
     DeltaTime = currentFrame - m_LastFrameTime;

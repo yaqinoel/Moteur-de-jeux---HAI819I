@@ -17,6 +17,18 @@ void SceneNode::AddChild(SceneNode *child) {
   }
 }
 
+void SceneNode::RemoveChild(SceneNode *child) {
+  if (!child)
+    return;
+
+  auto it = std::find(m_children.begin(), m_children.end(), child);
+
+  if (it != m_children.end()) {
+    (*it)->m_parent = nullptr;
+    m_children.erase(it);
+  }
+}
+
 void SceneNode::Update(const glm::mat4 &parentWorldMatrix) {
   // 获取世界矩阵（parent * local）
   m_worldMatrix = parentWorldMatrix * m_transform.getLocalModelMatrix();
@@ -28,19 +40,27 @@ void SceneNode::Update(const glm::mat4 &parentWorldMatrix) {
 }
 
 void SceneNode::Draw(Shader &shader, const glm::mat4 &viewMatrix,
-                     const glm::mat4 &projectionMatrix) {
+                     const glm::mat4 &projectionMatrix, const Cone &cone) {
+
+  if (m_isCullable) {
+    // 提取全局坐标
+    glm::vec3 globalPos = glm::vec3(m_worldMatrix[3]);
+
+    // 如果节点中心位置不在圆锥体内，直接抛弃该节点和它的所有子节点
+    if (!cone.containsPoint(globalPos)) {
+      return;
+    }
+  }
+
   if (m_model) {
     // 计算MVP矩阵
     glm::mat4 mvp = projectionMatrix * viewMatrix * m_worldMatrix;
     shader.setMat4("MVP", mvp);
-
-    // shader.setMat4("Model", m_worldMatrix);
-
     m_model->Draw(shader);
   }
 
   // 绘制孩子节点
   for (SceneNode *child : m_children) {
-    child->Draw(shader, viewMatrix, projectionMatrix);
+    child->Draw(shader, viewMatrix, projectionMatrix, cone);
   }
 }

@@ -4,6 +4,7 @@
 class Time {
 public:
     // 静态变量：全项目共享这一份数据
+    static float CurrentTime;
     static float DeltaTime;
     static int FPS;
 
@@ -16,6 +17,7 @@ private:
     static float m_LastFrameTime;
     static float m_LastFPSTime;
     static int m_FrameCount;
+
 };
 
 #endif  //TIME_HPP

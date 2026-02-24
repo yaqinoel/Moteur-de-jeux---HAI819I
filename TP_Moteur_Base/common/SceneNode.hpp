@@ -1,8 +1,9 @@
 #ifndef SCENENODE_HPP
 #define SCENENODE_HPP
 
+#include "Cone.hpp"
 #include "Transform.hpp"
-#include "model.hpp" // Assuming Model class is available
+#include "model.hpp"
 #include "shader.hpp"
 #include <glm/glm.hpp>
 #include <vector>
@@ -13,13 +14,16 @@ public:
   ~SceneNode();
 
   void AddChild(SceneNode *child);
+  void RemoveChild(SceneNode *child);
 
   void Update(const glm::mat4 &parentWorldMatrix);
   void Draw(Shader &shader, const glm::mat4 &viewMatrix,
-            const glm::mat4 &projectionMatrix);
+            const glm::mat4 &projectionMatrix, const Cone &cone);
 
   Transform &GetTransform() { return m_transform; }
   const glm::mat4 &GetWorldMatrix() const { return m_worldMatrix; }
+
+  bool m_isCullable = false;
 
 private:
   Transform m_transform;

@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <vector>
 
-
 // Include GLEW
 #include <GL/glew.h>
 
@@ -20,7 +19,6 @@ GLFWwindow *window;
 #include <iostream>
 #include <random>
 
-
 #include <fstream>
 using namespace glm;
 
@@ -30,10 +28,12 @@ using namespace glm;
 #include "common/shader.hpp"
 #include <common/shader.hpp>
 
-
 // Scene Graph Includes
+#include "common/Cone.hpp"
+#include "common/InfiniteScene.hpp"
 #include "common/SceneManager.hpp"
 #include "common/SceneNode.hpp"
+#include "common/SolarSystem.hpp"
 #include "common/Transform.hpp"
 
 void processInput(GLFWwindow *window);
@@ -60,18 +60,11 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 bool mouseClickDown = false;
 
-SceneManager sceneManager;
+SceneManager solarSceneManager;
+SceneManager infiniteSceneManager;
 
-SceneNode *sunMeshNode;
-
-SceneNode *earthOrbitNode;
-SceneNode *earthPositionNode;
-SceneNode *earthTiltNode;
-SceneNode *earthMeshNode;
-
-SceneNode *moonOrbitNode;
-SceneNode *moonPositionNode;
-SceneNode *moonMeshNode;
+SolarSystem *solarSystem = nullptr;
+InfiniteScene *infiniteScene = nullptr;
 
 int main(void) {
   // Initialise GLFW
@@ -88,8 +81,7 @@ int main(void) {
                  GL_TRUE); // To make MacOS happy; should not be needed
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  window = glfwCreateWindow(1024, 768, windowTitle.c_str(), NULL,
-                            NULL);
+  window = glfwCreateWindow(1024, 768, windowTitle.c_str(), NULL, NULL);
   if (window == NULL) {
     fprintf(stderr,
             "Failed to open GLFW window. If you have an Intel GPU, they are "
@@ -131,59 +123,25 @@ int main(void) {
   Shader planeteShader("./resources/shaders/vertex_shader_planete.glsl",
                        "./resources/shaders/fragment_shader_planete.glsl");
 
-  // 加载模型
-  Model *sunModel = new Model(string("./resources/models/planete/sun.obj"));
-  Model *earthModel = new Model(string("./resources/models/planete/earth.obj"));
-  Model *moonModel = new Model(string("./resources/models/planete/moon.obj"));
+  Shader infiniteShader("./resources/shaders/vertex_shader_infinite.glsl",
+                       "./resources/shaders/fragment_shader_infinite.glsl");
 
-  // 设置场景图
-  // 根节点
-  SceneNode *root = sceneManager.GetRoot();
+  // 设置场景图和太阳系
+  solarSystem = new SolarSystem(solarSceneManager);
 
-  // 太阳节点
-  sunMeshNode = new SceneNode(sunModel);
-  sunMeshNode->GetTransform().setScale(glm::vec3(1.0f));
-  root->AddChild(sunMeshNode);
+  Model *moonModel =
+      new Model(std::string("./resources/models/planete/moon.obj"));
 
-  // 地球轨道节点
-  earthOrbitNode = new SceneNode(nullptr);
-  root->AddChild(earthOrbitNode);
-
-  // 设置地球轨道节点
-  earthPositionNode = new SceneNode(nullptr);
-  earthPositionNode->GetTransform().setTranslation(glm::vec3(10.0f, 0.0f, 0.0f));
-  earthOrbitNode->AddChild(earthPositionNode);
-
-  // 设置地球偏转轴节点
-  earthTiltNode = new SceneNode(nullptr);
-  earthTiltNode->GetTransform().setRotation(glm::vec3(23.0f, 0.0f, 0.0f));
-  earthPositionNode->AddChild(earthTiltNode);
-
-  // 设置地球面节点
-  earthMeshNode = new SceneNode(earthModel);
-  earthMeshNode->GetTransform().setScale(glm::vec3(0.5f));
-  earthTiltNode->AddChild(earthMeshNode);
-
-  // 月球轨道节点
-  moonOrbitNode = new SceneNode(nullptr);
-  earthPositionNode->AddChild(moonOrbitNode);
-
-  // 月球位置节点
-  moonPositionNode = new SceneNode(nullptr);
-  moonPositionNode->GetTransform().setTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
-  moonOrbitNode->AddChild(moonPositionNode);
-
-  // 月球面节点
-  moonMeshNode = new SceneNode(moonModel);
-  moonMeshNode->GetTransform().setScale(glm::vec3(0.3f));
-  moonPositionNode->AddChild(moonMeshNode);
+  // 无限场景
+  infiniteScene = new InfiniteScene(infiniteSceneManager, moonModel);
 
   Time::intialize();
 
   do {
     Time::Update();
 
-    windowTitle = "TP3 - Scene Graph - Solar System | FPS: " + std::to_string(Time::FPS);
+    windowTitle =
+        "TP3 - Scene Graph - Solar System | FPS: " + std::to_string(Time::FPS);
     glfwSetWindowTitle(window, windowTitle.c_str());
 
     if (camera.m_IsOrbital) {
@@ -198,28 +156,45 @@ int main(void) {
 
     float dt = Time::DeltaTime;
 
-    // 太阳自转
-    sunMeshNode->GetTransform().Rotate(glm::vec3(0.0f, 10.0f * dt, 0.0f));
+    // 更新太阳系场景
+    if (solarSystem) {
+      solarSystem->update(dt);
+    }
 
-    // 地球公转
-    earthOrbitNode->GetTransform().Rotate(
-        glm::vec3(0.0f, 50.0f * dt, 0.0f));
-
-    // 地球自转
-    earthMeshNode->GetTransform().Rotate(
-        glm::vec3(0.0f, 20.0f * dt, 0.0f));
-
-    // 月球公转
-    moonOrbitNode->GetTransform().Rotate(
-        glm::vec3(0.0f, 50.0f * dt, 0.0f));
+    // 更新无限场景
+    if (infiniteScene) {
+      infiniteScene->Update(camera.m_Position);
+    }
 
     // 更新场景
-    sceneManager.Update();
+    solarSceneManager.Update();
+    infiniteSceneManager.Update();
 
-    // 绘制场景
-    glm::mat4 viewMatrix = camera.GetViewMatrix();
-    glm::mat4 projectionMatrix = camera.GetProjectiveMatrix();
-    sceneManager.Draw(planeteShader, viewMatrix, projectionMatrix);
+    // 获得View和Projection矩阵
+    glm::mat4 view = camera.GetViewMatrix();
+    glm::mat4 projection = camera.GetProjectiveMatrix();
+
+    // 构造相机视锥体进行裁剪
+    Cone viewingCone;
+    viewingCone.apex = camera.m_Position;
+    viewingCone.direction = camera.m_Front;
+
+    // 计算包含整个屏幕矩形的圆锥半角
+    float halfFovY = glm::radians(camera.m_Zoom * 0.5f);
+    float tanY = glm::tan(halfFovY);
+    float tanX = tanY * camera.m_Aspect;
+    float coneHalfAngle = glm::atan(glm::sqrt(tanY * tanY + tanX * tanX));
+
+    viewingCone.angleCos = glm::cos(coneHalfAngle);
+    viewingCone.length = camera.m_ZFar;
+
+    // 对场景进行绘制
+    solarSceneManager.Draw(planeteShader, view, projection, viewingCone);
+
+    // 无限场景绘制
+    infiniteShader.use();
+    infiniteShader.setFloat("time", Time::CurrentTime);
+    infiniteSceneManager.Draw(infiniteShader, view, projection, viewingCone);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -229,9 +204,8 @@ int main(void) {
 
   glDeleteProgram(planeteShader.m_ID);
 
-  delete sunModel;
-  delete earthModel;
-  delete moonModel;
+  delete solarSystem;
+  delete infiniteScene;
 
   glfwTerminate();
 
