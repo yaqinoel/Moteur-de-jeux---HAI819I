@@ -10,6 +10,8 @@
 // Include GLFW
 #include <GLFW/glfw3.h>
 
+#include "common/TerrainSystem.hpp"
+
 GLFWwindow *window;
 
 // Include GLM
@@ -47,24 +49,19 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
 // 窗口设置
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-std::string windowTitle = "TP3 - Scene Graph - Solar System";
+std::string windowTitle = "Moteur de jeux";
 
 bool isWireframe = false;
 
 // 相机初始化参数
-Camera
-    camera(glm::vec3(0.0f, 20.f,
-                     20.f)); // Adjusted camera for better view of solar system
+Camera camera(glm::vec3(0.0f, 20.f, 20.f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 bool mouseClickDown = false;
 
-SceneManager solarSceneManager;
-SceneManager infiniteSceneManager;
-
-SolarSystem *solarSystem = nullptr;
-InfiniteScene *infiniteScene = nullptr;
+SceneManager terrainSceneManager;
+TerrainSystem *terrainSystem = nullptr;
 
 int main(void) {
   // Initialise GLFW
@@ -77,8 +74,7 @@ int main(void) {
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT,
-                 GL_TRUE); // To make MacOS happy; should not be needed
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   window = glfwCreateWindow(1024, 768, windowTitle.c_str(), NULL, NULL);
@@ -120,20 +116,11 @@ int main(void) {
   glDepthFunc(GL_LESS);
 
   // 创建并编译Shader
-  Shader planeteShader("./resources/shaders/vertex_shader_planete.glsl",
-                       "./resources/shaders/fragment_shader_planete.glsl");
+  Shader terrainShader("./resources/shaders/vertex_shader_terrain.glsl",
+                       "./resources/shaders/fragment_shader_terrain.glsl");
 
-  Shader infiniteShader("./resources/shaders/vertex_shader_infinite.glsl",
-                       "./resources/shaders/fragment_shader_infinite.glsl");
-
-  // 设置场景图和太阳系
-  solarSystem = new SolarSystem(solarSceneManager);
-
-  Model *moonModel =
-      new Model(std::string("./resources/models/planete/moon.obj"));
-
-  // 无限场景
-  infiniteScene = new InfiniteScene(infiniteSceneManager, moonModel);
+  // 初始化地形系统
+  terrainSystem = new TerrainSystem(terrainSceneManager,16);
 
   Time::intialize();
 
@@ -152,49 +139,24 @@ int main(void) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    planeteShader.use();
+    terrainShader.use();
 
     float dt = Time::DeltaTime;
 
-    // 更新太阳系场景
-    if (solarSystem) {
-      solarSystem->update(dt);
-    }
-
-    // 更新无限场景
-    if (infiniteScene) {
-      infiniteScene->Update(camera.m_Position);
-    }
+    // 更新地形场景
+    // if (terrainSystem) {
+    //   terrainSystem->update(dt);
+    // }
 
     // 更新场景
-    solarSceneManager.Update();
-    infiniteSceneManager.Update();
+    terrainSceneManager.Update();
 
     // 获得View和Projection矩阵
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 projection = camera.GetProjectiveMatrix();
+    Cone cone;
 
-    // 构造相机视锥体进行裁剪
-    Cone viewingCone;
-    viewingCone.apex = camera.m_Position;
-    viewingCone.direction = camera.m_Front;
-
-    // 计算包含整个屏幕矩形的圆锥半角
-    float halfFovY = glm::radians(camera.m_Zoom * 0.5f);
-    float tanY = glm::tan(halfFovY);
-    float tanX = tanY * camera.m_Aspect;
-    float coneHalfAngle = glm::atan(glm::sqrt(tanY * tanY + tanX * tanX));
-
-    viewingCone.angleCos = glm::cos(coneHalfAngle);
-    viewingCone.length = camera.m_ZFar;
-
-    // 对场景进行绘制
-    solarSceneManager.Draw(planeteShader, view, projection, viewingCone);
-
-    // 无限场景绘制
-    infiniteShader.use();
-    infiniteShader.setFloat("time", Time::CurrentTime);
-    infiniteSceneManager.Draw(infiniteShader, view, projection, viewingCone);
+    terrainSceneManager.Draw(terrainShader, view, projection, cone);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -202,10 +164,9 @@ int main(void) {
   } while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0);
 
-  glDeleteProgram(planeteShader.m_ID);
+  glDeleteProgram(terrainShader.m_ID);
 
-  delete solarSystem;
-  delete infiniteScene;
+  delete terrainSystem;
 
   glfwTerminate();
 
@@ -289,7 +250,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
       if (camera.m_IsOrbital) {
         camera.DisableOrbitalMode();
       } else {
-        camera.EnableOrbitalMode(glm::vec3(0.0f, 0.0f, 0.0f), 9.0f, 45.0f);
+        camera.EnableOrbitalMode(terrainSystem->terrainNode, 2.5f, 45.0f);
       }
     }
 

@@ -66,8 +66,8 @@ add_executable(TP_Moteur_Base
 
 		external/stb_image/stb_image.cpp
 
-		resources/shaders/vertex_shader.glsl
-		resources/shaders/fragment_shader.glsl
+		resources/shaders/vertex_shader_terrain.glsl
+        resources/shaders/fragment_shader_terrain.glsl
 		common/camera.hpp
 		common/camera.cpp
 		common/Time.hpp

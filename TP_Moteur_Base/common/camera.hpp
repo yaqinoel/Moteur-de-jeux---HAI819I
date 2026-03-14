@@ -8,6 +8,8 @@
 
 #include "Time.hpp"
 
+class SceneNode;
+
 // 定义相机移动方向的枚举
 enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
 
@@ -53,10 +55,14 @@ public:
   // 轨道模式参数
   bool m_IsOrbital = false;
   float m_OrbitalAngle = 0.0f;
-  float m_OrbitalRadius = 2.0f;
   float m_OrbitalSpeed = 0.5f;
   float m_angle = 45.f;
+
+  float m_OrbitalRadius = 2.0f;
   glm::vec3 m_Target;
+
+  SceneNode * m_OrbitalTarget = nullptr;
+  float m_DistanceMultiplier = 2.0f;
 
   // 构造函数声明
   Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
@@ -75,6 +81,7 @@ public:
 
   // 轨道模式
   void EnableOrbitalMode(glm::vec3 targetPoint, float radius, float angle);
+  void EnableOrbitalMode(SceneNode* targetNode, float distanceMultiplier = 2.0f, float elevationAngle = 45.0f);
 
   // 关闭轨道模式
   void DisableOrbitalMode();

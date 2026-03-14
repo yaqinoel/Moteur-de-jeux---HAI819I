@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "SceneNode.hpp"
+
 
 Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch, float roll)
     : m_Front(glm::vec3(0.0f, 0.0f, -1.0f)), m_MovementSpeed(SPEED), m_MouseSensitivity(SENSITIVITY), m_Zoom(ZOOM), m_Aspect(ASPECT), m_ZNear(ZNEAR), m_ZFar(ZFAR)
@@ -92,9 +94,18 @@ void Camera::EnableOrbitalMode(glm::vec3 targetPoint, float radius, float angle)
     m_OrbitalRadius = radius;
 }
 
+void Camera::EnableOrbitalMode(SceneNode* targetNode, float distanceMultiplier, float elevationAngle) {
+    m_IsOrbital = true;
+    m_OrbitalTarget = targetNode;
+    m_DistanceMultiplier = distanceMultiplier;
+    m_angle = elevationAngle;
+    // m_OrbitalAngle = 0.0f;
+}
+
 // 关闭轨道模式
 void Camera::DisableOrbitalMode() {
     m_IsOrbital = false;
+    m_OrbitalTarget = nullptr;
 
     // 更新回四元数的旋转逻辑
     glm::mat4 viewMatrix = glm::lookAt(m_Position, m_Target, m_WorldUp);
@@ -108,17 +119,27 @@ void Camera::DisableOrbitalMode() {
 
 // 更新轨道位置
 void Camera::UpdateOrbital(float deltaTime) {
-    if (!m_IsOrbital) return;
+    if (!m_IsOrbital || !m_OrbitalTarget) return;
 
-    // 增加角度
+    const glm::mat4& targetWorldMat = m_OrbitalTarget->GetWorldMatrix();
+    glm::vec3 currentTargetPos = glm::vec3(targetWorldMat[3]);
+
+    float targetScale = glm::length(glm::vec3(targetWorldMat[0]));
+    float dynamicRadius = targetScale * m_DistanceMultiplier;
+
     m_OrbitalAngle += m_OrbitalSpeed * deltaTime;
 
-    float camX = sin(m_OrbitalAngle) * m_OrbitalRadius;
-    float camZ = cos(m_OrbitalAngle) * m_OrbitalRadius;
-    float camY = m_OrbitalRadius * tan(m_angle);
+    float angleRad = glm::radians(m_angle);
 
-    // 更新相机位置
-    m_Position = m_Target + glm::vec3(camX, camY, camZ);
+    float camX = sin(m_OrbitalAngle) * dynamicRadius;
+    float camZ = cos(m_OrbitalAngle) * dynamicRadius;
+    float camY = dynamicRadius * tan(angleRad);
+
+    m_Position = currentTargetPos + glm::vec3(camX, camY, camZ);
+
+    m_Front = glm::normalize(currentTargetPos - m_Position);
+    m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
+    m_Up    = glm::normalize(glm::cross(m_Right, m_Front));
 }
 
 // 改变轨道速度
