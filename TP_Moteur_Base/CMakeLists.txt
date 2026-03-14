@@ -76,6 +76,12 @@ add_executable(TP_Moteur_Base
 		common/mesh.hpp
 		common/mesh.cpp
 		common/model.cpp
+		common/Transform.cpp
+		common/Transform.hpp
+		common/SceneNode.cpp
+		common/SceneNode.hpp
+		common/SceneManager.cpp
+		common/SceneManager.hpp
 )
 target_link_libraries(TP_Moteur_Base
 	${ALL_LIBS}
