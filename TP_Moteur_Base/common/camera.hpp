@@ -11,13 +11,13 @@
 class SceneNode;
 
 // 定义相机移动方向的枚举
-enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
+enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
 
 // 默认相机参数常量
 const float YAW = 0.0f;
 const float PITCH = -45.0f;
 const float ROLL = 0.0f;
-const float SPEED = 50.0f;
+const float SPEED = 10.0f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 const float ASPECT = 4.0f / 3.0f;
@@ -57,8 +57,16 @@ public:
   float m_OrbitalAngle = 0.0f;
   float m_OrbitalSpeed = 0.5f;
   float m_angle = 45.f;
-
   float m_OrbitalRadius = 2.0f;
+
+
+
+  // 跟随模式参数
+  bool m_IsFollowing = false;
+  SceneNode* m_FollowTarget = nullptr;
+  float m_FollowDistance = 10.0f; // 相机在玩家身后的距离
+  float m_FollowHeight = 10.0f;   // 相机在玩家头顶的高度
+
   glm::vec3 m_Target;
 
   SceneNode * m_OrbitalTarget = nullptr;
@@ -91,6 +99,10 @@ public:
 
   // 改变轨道速度
   void ChangeOrbitalSpeed(float delta);
+
+    void EnableFollowMode(SceneNode* targetNode, float distance = 5.0f, float height = 3.0f);
+    void DisableFollowMode();
+    void UpdateFollow(float deltaTime);
 
 private:
   void updateCameraVectors();
