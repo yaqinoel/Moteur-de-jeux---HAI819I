@@ -23,6 +23,10 @@ public:
   Transform &GetTransform() { return m_transform; }
   const glm::mat4 &GetWorldMatrix() const { return m_worldMatrix; }
 
+  void SetModel(Model* newModel) {
+      m_model = newModel;
+  }
+
   bool m_isCullable = false;
 
 private:

@@ -54,8 +54,10 @@ void SceneNode::Draw(Shader &shader, const glm::mat4 &viewMatrix,
 
   if (m_model) {
     // 计算MVP矩阵
-    glm::mat4 mvp = projectionMatrix * viewMatrix * m_worldMatrix;
-    shader.setMat4("MVP", mvp);
+    // glm::mat4 mvp = projectionMatrix * viewMatrix * m_worldMatrix;
+    shader.setMat4("Model", m_worldMatrix);
+    shader.setMat4("View",viewMatrix );
+    shader.setMat4("Projection",projectionMatrix );
     m_model->Draw(shader);
   }
 

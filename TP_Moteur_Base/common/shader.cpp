@@ -180,6 +180,12 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
         glUniformMatrix4fv(glGetUniformLocation(m_ID, name.c_str()),1,GL_FALSE, &mat[0][0]);
     }
 
+	void Shader:: setVec3(const std::string &name, const glm::vec3 &vec) const{
+		glUniform3fv(glGetUniformLocation(m_ID, name.c_str()), 1, &vec[0]);
+	}
+
+
+
 void Shader::checkCompileErrors(unsigned int shader, std::string type) {
 	int success;
 	char infoLog[1024];

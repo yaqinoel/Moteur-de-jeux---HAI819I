@@ -38,17 +38,17 @@ glm::mat4 Camera::GetProjectiveMatrix() const {
 
 void Camera::ProcessKeyboard(Camera_Movement direction) {
     float velocity = m_MovementSpeed * Time::DeltaTime;
-    if (direction == FORWARD)
+    if (direction == Camera_Movement::FORWARD)
         m_Position += m_Front * velocity;
-    if (direction == BACKWARD)
+    if (direction == Camera_Movement::BACKWARD)
         m_Position -= m_Front * velocity;
-    if (direction == LEFT)
+    if (direction == Camera_Movement::LEFT)
         m_Position -= m_Right * velocity;
-    if (direction == RIGHT)
+    if (direction == Camera_Movement::RIGHT)
         m_Position += m_Right * velocity;
-    if (direction == UP)
+    if (direction == Camera_Movement::UP)
         m_Position += m_WorldUp * velocity;
-    if (direction == DOWN)
+    if (direction == Camera_Movement::DOWN)
         m_Position -= m_WorldUp * velocity;
 }
 
@@ -145,4 +145,45 @@ void Camera::UpdateOrbital(float deltaTime) {
 // 改变轨道速度
 void Camera::ChangeOrbitalSpeed(float delta) {
     m_OrbitalSpeed += delta;
+}
+
+void Camera::EnableFollowMode(SceneNode* targetNode, float distance, float height) {
+    m_IsFollowing = true;
+    m_IsOrbital = false; // 确保关闭其他模式
+    m_FollowTarget = targetNode;
+    m_FollowDistance = distance;
+    m_FollowHeight = height;
+}
+
+// 关闭跟随模式
+void Camera::DisableFollowMode() {
+    m_IsFollowing = false;
+    m_FollowTarget = nullptr;
+}
+
+// 更新跟随相机的位置和朝向
+void Camera::UpdateFollow(float deltaTime) {
+    if (!m_IsFollowing || !m_FollowTarget) return;
+
+    // 获取玩家节点的世界矩阵
+    const glm::mat4& targetWorldMat = m_FollowTarget->GetWorldMatrix();
+
+    // 提取玩家位置
+    glm::vec3 playerPos = glm::vec3(targetWorldMat[3]);
+
+    // 提取玩家的前方向量
+    glm::vec3 playerFront = -glm::normalize(glm::vec3(targetWorldMat[2]));
+
+    // 计算相机的理想位置：玩家位置 - 玩家前方 * 距离 + 向上高度
+    glm::vec3 cameraPos = playerPos - (playerFront * m_FollowDistance) + glm::vec3(0.0f, m_FollowHeight, 0.0f);
+
+    // 更新相机的实际位置
+    m_Position = cameraPos;
+
+    // 让相机看向玩家
+    glm::vec3 lookAtTarget = playerPos + glm::vec3(0.0f, 1.0f, 0.0f);
+
+    m_Front = glm::normalize(lookAtTarget - m_Position);
+    m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
+    m_Up    = glm::normalize(glm::cross(m_Right, m_Front));
 }
