@@ -72,10 +72,10 @@ add_executable(TP_Moteur_Base
 		common/camera.cpp
 		common/Time.hpp
 		common/Time.cpp
-		common/model.hpp
+        common/RenderingModel.hpp
 		common/mesh.hpp
 		common/mesh.cpp
-		common/model.cpp
+        common/RenderingModel.cpp
 		common/Transform.cpp
 		common/Transform.hpp
 		common/SceneNode.cpp

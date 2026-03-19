@@ -13,7 +13,7 @@ public:
   SceneNode *GetRoot() { return m_root; }
 
   void Update();
-  void Draw(Shader &shader, const glm::mat4 &viewMatrix,
+  void Draw(const glm::mat4 &viewMatrix,
             const glm::mat4 &projectionMatrix, const Cone &cone);
 
 private:

@@ -3,7 +3,7 @@
 
 #include "SceneManager.hpp"
 #include "SceneNode.hpp"
-#include "model.hpp"
+#include "RenderingModel.hpp"
 #include <vector>
 
 #include "TerrainSystem.hpp"
@@ -18,8 +18,8 @@ const float VISIBLE_DISTANCE = 50.0f;
 class PlayerSystem {
 public:
     // 模型
-    std::vector<Model*> m_lodModels;
-    Model* m_playerModel = nullptr;
+    std::vector<RenderingModel*> m_lodModels;
+    RenderingModel* m_playerModel = nullptr;
     float m_maxVisibleDistance;
 
     // 节点
@@ -33,10 +33,10 @@ public:
     // 构造玩家系统
     PlayerSystem(SceneManager &sceneManager) {
         // 设置模型
-        m_lodModels.push_back(new Model(std::string("./resources/models/bunny_lod/bunny0.off")));
-        m_lodModels.push_back(new Model(std::string("./resources/models/bunny_lod/bunny1.off")));
-        m_lodModels.push_back(new Model(std::string("./resources/models/bunny_lod/bunny2.off")));
-        m_lodModels.push_back(new Model(std::string("./resources/models/bunny_lod/bunny3.off")));
+        m_lodModels.push_back(new RenderingModel(std::string("./resources/models/bunny_lod/bunny0.off")));
+        m_lodModels.push_back(new RenderingModel(std::string("./resources/models/bunny_lod/bunny1.off")));
+        m_lodModels.push_back(new RenderingModel(std::string("./resources/models/bunny_lod/bunny2.off")));
+        m_lodModels.push_back(new RenderingModel(std::string("./resources/models/bunny_lod/bunny3.off")));
 
         m_playerModel = m_lodModels[0];
 
@@ -112,7 +112,7 @@ public:
             targetIndex = 0;
         }
 
-        Model* targetModel = m_lodModels[targetIndex];
+        RenderingModel* targetModel = m_lodModels[targetIndex];
 
         if (targetModel != m_playerModel) {
             m_playerModel = targetModel;             // 更新当前记录
@@ -128,4 +128,4 @@ private:
 
 
 
-#endif PLAYERNODE_HPP
+#endif // PLAYERNODE_HPP

@@ -3,7 +3,7 @@
 
 #include "SceneManager.hpp"
 #include "SceneNode.hpp"
-#include "model.hpp"
+#include "RenderingModel.hpp"
 #include <cmath>
 #include <iostream>
 #include <map>
@@ -15,7 +15,7 @@ class InfiniteScene {
 public:
 
   // 构造无限场景
-  InfiniteScene(SceneManager &sceneManager, Model *objectModel,
+  InfiniteScene(SceneManager &sceneManager, RenderingModel *objectModel,
                 float chunkSize = 200.0f, int renderDistance = 4)
       : m_sceneManager(sceneManager), m_objectModel(objectModel),
         m_chunkSize(chunkSize), m_renderDistance(renderDistance) {}
@@ -78,7 +78,7 @@ public:
 
 private:
   SceneManager &m_sceneManager;
-  Model *m_objectModel;
+  RenderingModel *m_objectModel;
   float m_chunkSize;
   int m_renderDistance;
 

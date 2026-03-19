@@ -10,6 +10,8 @@
 // Include GLFW
 #include <GLFW/glfw3.h>
 
+#include "common/CubeObjet.hpp"
+#include "common/GameObjet.hpp"
 #include "common/PlayerSystem.hpp"
 #include "common/TerrainSystem.hpp"
 
@@ -27,7 +29,7 @@ using namespace glm;
 
 #include "common/Time.hpp"
 #include "common/camera.hpp"
-#include "common/model.hpp"
+#include "common/RenderingModel.hpp"
 #include "common/shader.hpp"
 #include <common/shader.hpp>
 
@@ -38,6 +40,7 @@ using namespace glm;
 #include "common/SceneNode.hpp"
 #include "common/SolarSystem.hpp"
 #include "common/Transform.hpp"
+#include "common/GameManager.hpp"
 
 void processInput(GLFWwindow *window);
 void processPlayerInput(GLFWwindow *window);
@@ -56,16 +59,15 @@ std::string windowTitle = "Moteur de jeux";
 bool isWireframe = false;
 
 // 相机初始化参数
-Camera camera(glm::vec3(0.0f, 20.f, 20.f));
+Camera camera(glm::vec3(5.0f, 5.f, 5.f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 bool mouseClickDown = false;
 
-SceneManager terrainSceneManager;
-SceneManager playerSceneManager;
-TerrainSystem *terrainSystem = nullptr;
-PlayerSystem *playerSystem = nullptr;
+GameManager gameManager;
+TerrainSystem* terrainSystem = nullptr;
+CubeObjet* fallingCube = nullptr;
 
 int main(void) {
   // Initialise GLFW
@@ -122,12 +124,14 @@ int main(void) {
   // 创建并编译Shader
   Shader terrainShader("./resources/shaders/vertex_shader_terrain.glsl",
                        "./resources/shaders/fragment_shader_terrain.glsl");
-  Shader playerShader("./resources/shaders/vertex_shader_bunny.glsl",
+  Shader objetShader("./resources/shaders/vertex_shader_bunny.glsl",
                        "./resources/shaders/fragment_shader_bunny.glsl");
 
   // 初始化地形系统
-  terrainSystem = new TerrainSystem(terrainSceneManager,16);
-  playerSystem = new PlayerSystem(playerSceneManager);
+  terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
+  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 1.0f, glm::vec3(0.0f, 4.0f, 0.0f));
+  gameManager.AddStaticGameObject(terrainSystem);
+  gameManager.AddDynamicGameObject(fallingCube);
 
   Time::intialize();
 
@@ -135,28 +139,16 @@ int main(void) {
     Time::Update();
     float dt = Time::DeltaTime;
 
+    processInput(window);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     windowTitle =
-        "TP3 - Scene Graph - Solar System | FPS: " + std::to_string(Time::FPS);
+        "TP5 - Physique Cube | FPS: " + std::to_string(Time::FPS);
     glfwSetWindowTitle(window, windowTitle.c_str());
 
-    // 处理输入
-    if (camera.m_IsFollowing) {
-      processPlayerInput(window);
-      playerSystem->updateHeight(terrainSystem);
-    } else if (!camera.m_IsOrbital) {
-      processInput(window);
-    }
-
-    // 更新LOD模型
-    if (playerSystem) {
-      playerSystem->UpdateLOD(camera.m_Position);
-    }
-
     // 更新场景
-    terrainSceneManager.Update();
-    playerSceneManager.Update();
+    gameManager.Update(dt);
 
     // 更新相机
     if (camera.m_IsOrbital) {
@@ -170,10 +162,9 @@ int main(void) {
     glm::mat4 projection = camera.GetProjectiveMatrix();
     Cone cone;
 
-    playerShader.setVec3("viewPos", camera.m_Position);
+    objetShader.setVec3("viewPos", camera.m_Position);
 
-    terrainSceneManager.Draw(terrainShader, view, projection, cone);
-    playerSceneManager.Draw(playerShader, view, projection, cone);
+    gameManager.Draw(view, projection, cone);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -182,10 +173,10 @@ int main(void) {
            glfwWindowShouldClose(window) == 0);
 
   glDeleteProgram(terrainShader.m_ID);
-  glDeleteProgram(playerShader.m_ID);
+  glDeleteProgram(objetShader.m_ID);
 
   delete terrainSystem;
-  delete playerSystem;
+  delete fallingCube;
 
   glfwTerminate();
 
@@ -208,17 +199,7 @@ void processInput(GLFWwindow *window) {
     camera.ProcessKeyboard(Camera_Movement::UP);
   if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
     camera.ProcessKeyboard(Camera_Movement::DOWN);
-}
 
-void processPlayerInput(GLFWwindow *window) {
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    playerSystem->ProcessKeyboard(Player_Movement::FORWARD);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    playerSystem->ProcessKeyboard(Player_Movement::BACKWARD);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    playerSystem->ProcessKeyboard(Player_Movement::LEFT);
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    playerSystem->ProcessKeyboard(Player_Movement::RIGHT);
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -284,16 +265,14 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
       }
     }
 
-    if (key == GLFW_KEY_P) {
-      if (camera.m_IsFollowing) {
-        camera.DisableFollowMode();
-      } else {
-        camera.DisableOrbitalMode();
-        // 把 playerSystem 的节点传给相机，设定距离和高度
-        if (playerSystem && playerSystem->m_playerNode) {
-          camera.EnableFollowMode(playerSystem->m_playerNode, 20.0f, 10.0f);
-        }
-      }
+    if (key == GLFW_KEY_SPACE) {
+      gameManager.SwitchSimulationStatus();
+      fallingCube->SetVelocity(5.0f * (camera.m_Front + glm::vec3(0.0f, 1.0f, 0.0f)));
+    }
+
+    if (key == GLFW_KEY_R) {
+      fallingCube->ResetStatus();
+      gameManager.StopSimulationStatus();
     }
 
     if (key == GLFW_KEY_UP) {

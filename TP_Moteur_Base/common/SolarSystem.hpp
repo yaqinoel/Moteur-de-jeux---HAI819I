@@ -3,7 +3,7 @@
 #include "common/SceneManager.hpp"
 #include "common/SceneNode.hpp"
 #include "common/Transform.hpp"
-#include "common/model.hpp"
+#include "common/RenderingModel.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
@@ -11,9 +11,9 @@
 class SolarSystem {
 public:
   // 模型
-  Model *sunModel;
-  Model *earthModel;
-  Model *moonModel;
+  RenderingModel *sunModel;
+  RenderingModel *earthModel;
+  RenderingModel *moonModel;
 
   // 太阳面模型节点
   SceneNode *sunMeshNode;
@@ -31,9 +31,9 @@ public:
 
   // 构造太阳系系统
   SolarSystem(SceneManager &sceneManager) {
-    sunModel = new Model(std::string("./resources/models/planete/sun.obj"));
-    earthModel = new Model(std::string("./resources/models/planete/earth.obj"));
-    moonModel = new Model(std::string("./resources/models/planete/moon.obj"));
+    sunModel = new RenderingModel(std::string("./resources/models/planete/sun.obj"));
+    earthModel = new RenderingModel(std::string("./resources/models/planete/earth.obj"));
+    moonModel = new RenderingModel(std::string("./resources/models/planete/moon.obj"));
 
     SceneNode *root = sceneManager.GetRoot();
 

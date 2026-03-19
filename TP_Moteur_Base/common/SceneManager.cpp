@@ -11,11 +11,10 @@ void SceneManager::Update() {
   }
 }
 
-void SceneManager::Draw(Shader &shader, const glm::mat4 &viewMatrix,
+void SceneManager::Draw(const glm::mat4 &viewMatrix,
                         const glm::mat4 &projectionMatrix, const Cone &cone) {
-  shader.use();
   if (m_root) {
-    m_root->Draw(shader, viewMatrix, projectionMatrix, cone);
+    m_root->Draw(viewMatrix, projectionMatrix, cone);
   }
 }
 
