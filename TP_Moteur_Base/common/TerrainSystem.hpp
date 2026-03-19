@@ -3,13 +3,15 @@
 
 #include "SceneManager.hpp"
 #include "SceneNode.hpp"
-#include "model.hpp"
+#include "RenderingModel.hpp"
 #include <vector>
 #include <random>
 
-class TerrainSystem {
+#include "ColliderShape.hpp"
+
+class TerrainSystem : public GameObjet{
 public:
-    Model* terrainModel;
+    RenderingModel* terrainModel;
     SceneNode* terrainNode;
 
     int resolution;
@@ -20,9 +22,10 @@ public:
     int m_hmWidth = 0, m_hmHeight = 0;
 
     // 构造函数
-    TerrainSystem(SceneManager& sceneManager, int initialResolution = 16) {
+    TerrainSystem(SceneManager& sceneManager, Shader* shader, int initialResolution = 16) : GameObjet() {
         resolution = initialResolution;
-        terrainModel = new Model();
+        terrainModel = new RenderingModel();
+        terrainModel->shader = shader;
 
         // 加载纹理和图片数据
         LoadTexturesAndHeightmap();
@@ -33,10 +36,14 @@ public:
 
         // 挂在到场景树
         terrainNode = new SceneNode(terrainModel);
-        terrainNode->GetTransform().setScale(glm::vec3(100.0f));
+        terrainNode->GetTransform().setScale(glm::vec3(50.0f));
         terrainNode->GetTransform().setTranslation(glm::vec3(0.0f, -30.0f, 0.0f));
-
         sceneManager.GetRoot()->AddChild(terrainNode);
+
+        PlanShape* planShape = new PlanShape(1.0f);
+        physicsModel = new PhysicsModel(planShape, 0.0f, terrainNode->GetTransform().getTranslation());
+
+        SyncTransform();
     }
 
     // 析构函数
@@ -61,7 +68,8 @@ public:
                 // 直接在几何生成阶段，从缓存的高度图数据中读取并计算真实高度！
                 float y = GetHeightFromImage(u, v);
 
-                vertex.Position = glm::vec3(x, y, z);
+                // vertex.Position = glm::vec3(x, y, z);
+                vertex.Position = glm::vec3(x, 0.f, z);
                 vertex.TexCoords = glm::vec2(u, v);
                 vertices.push_back(vertex);
             }
@@ -92,8 +100,8 @@ public:
     }
 
     // 生成地形
-    Model* generatePlane(int nbX, int nbY) {
-        Model* terrainModel = new Model();
+    RenderingModel* generatePlane(int nbX, int nbY) {
+        RenderingModel* terrainModel = new RenderingModel();
 
         vector<Vertex> vertices;
         vector<unsigned int> indices;
@@ -259,4 +267,4 @@ private:
     }
 };
 
-#endif TERRAINSYSTEM_HPP
+#endif // TERRAINSYSTEM_HPP

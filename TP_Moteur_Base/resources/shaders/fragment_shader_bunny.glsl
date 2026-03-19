@@ -9,9 +9,9 @@ out vec4 color;
 uniform vec3 viewPos;
 
 void main(){
-        vec3 lightPos = vec3(0, 100.0, 0); // 光源在右上角
+        vec3 lightPos = vec3(10.0, 10.0, 10.0); // 光源在右上角
         vec3 lightColor = vec3(1.0, 1.0, 1.0);  // 白光
-        vec3 objectColor = vec3(0.5, 0.7, 0.6); // 兔子的基础颜色 (你原本的颜色)
+        vec3 objectColor = vec3(0.7, 0.7, 0.7); // 兔子的基础颜色
 
         // Ambient
         float ambientStrength = 0.2;
