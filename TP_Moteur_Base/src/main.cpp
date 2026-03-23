@@ -42,7 +42,6 @@ using namespace glm;
 #include "common/Transform.hpp"
 #include "common/GameManager.hpp"
 
-void processInput(GLFWwindow *window);
 void processPlayerInput(GLFWwindow *window);
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
@@ -64,6 +63,9 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 bool mouseClickDown = false;
+
+// 输入管理器
+InputManager inputManager;
 
 GameManager gameManager;
 TerrainSystem* terrainSystem = nullptr;
@@ -121,6 +123,9 @@ int main(void) {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
 
+  camera.SetupInput(inputManager);
+  inputManager.SetContext("FreeMode");
+
   // 创建并编译Shader
   Shader terrainShader("./resources/shaders/vertex_shader_terrain.glsl",
                        "./resources/shaders/fragment_shader_terrain.glsl");
@@ -139,7 +144,7 @@ int main(void) {
     Time::Update();
     float dt = Time::DeltaTime;
 
-    processInput(window);
+    inputManager.Update(window);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -181,25 +186,6 @@ int main(void) {
   glfwTerminate();
 
   return 0;
-}
-
-void processInput(GLFWwindow *window) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
-
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    camera.ProcessKeyboard(Camera_Movement::FORWARD);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    camera.ProcessKeyboard(Camera_Movement::BACKWARD);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    camera.ProcessKeyboard(Camera_Movement::LEFT);
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    camera.ProcessKeyboard(Camera_Movement::RIGHT);
-  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-    camera.ProcessKeyboard(Camera_Movement::UP);
-  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-    camera.ProcessKeyboard(Camera_Movement::DOWN);
-
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -259,9 +245,11 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_C) {
       if (camera.m_IsOrbital) {
         camera.DisableOrbitalMode();
+        inputManager.SetContext("FreeMode");
       } else {
         camera.DisableFollowMode();
         camera.EnableOrbitalMode(terrainSystem->terrainNode, 2.5f, 45.0f);
+        inputManager.SetContext("OrbitalMode");
       }
     }
 
@@ -275,11 +263,5 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
       gameManager.StopSimulationStatus();
     }
 
-    if (key == GLFW_KEY_UP) {
-      camera.ChangeOrbitalSpeed(0.1f);
-    }
-    if (key == GLFW_KEY_DOWN) {
-      camera.ChangeOrbitalSpeed(-0.1f);
-    }
   }
 }

@@ -6,6 +6,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "InputManager.hpp"
 #include "Time.hpp"
 
 class SceneNode;
@@ -103,6 +104,8 @@ public:
     void EnableFollowMode(SceneNode* targetNode, float distance = 5.0f, float height = 3.0f);
     void DisableFollowMode();
     void UpdateFollow(float deltaTime);
+
+    void SetupInput(InputManager& inputManager);
 
 private:
   void updateCameraVectors();

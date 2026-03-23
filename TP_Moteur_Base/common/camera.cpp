@@ -187,3 +187,15 @@ void Camera::UpdateFollow(float deltaTime) {
     m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
     m_Up    = glm::normalize(glm::cross(m_Right, m_Front));
 }
+
+void Camera::SetupInput(InputManager &inputManager) {
+    inputManager.BindHold("FreeMode", GLFW_KEY_W, [this]() { this->ProcessKeyboard(Camera_Movement::FORWARD); });
+    inputManager.BindHold("FreeMode", GLFW_KEY_S, [this]() { this->ProcessKeyboard(Camera_Movement::BACKWARD); });
+    inputManager.BindHold("FreeMode", GLFW_KEY_A, [this]() { this->ProcessKeyboard(Camera_Movement::LEFT); });
+    inputManager.BindHold("FreeMode", GLFW_KEY_D, [this]() { this->ProcessKeyboard(Camera_Movement::RIGHT); });
+    inputManager.BindHold("FreeMode", GLFW_KEY_Q, [this]() { this->ProcessKeyboard(Camera_Movement::UP); });
+    inputManager.BindHold("FreeMode", GLFW_KEY_E, [this]() { this->ProcessKeyboard(Camera_Movement::DOWN); });
+
+    inputManager.BindPress("OrbitalMode", GLFW_KEY_UP, [this]() { this->ChangeOrbitalSpeed(0.1f); });
+    inputManager.BindPress("OrbitalMode", GLFW_KEY_DOWN, [this]() { this->ChangeOrbitalSpeed(-0.1f); });
+}
