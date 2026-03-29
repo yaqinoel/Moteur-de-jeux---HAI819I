@@ -15,12 +15,12 @@ class SceneNode;
 enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
 
 // 默认相机参数常量
-const float YAW = 45.0f;
+const float YAW = -125.0f;
 const float PITCH = 0.0f;
 const float ROLL = 0.0f;
 const float SPEED = 10.0f;
 const float SENSITIVITY = 0.1f;
-const float ZOOM = 45.0f;
+const float ZOOM = 60.0f;
 const float ASPECT = 4.0f / 3.0f;
 const float ZNEAR = 0.1f;
 const float ZFAR = 1000.f;
@@ -107,8 +107,12 @@ public:
 
     void SetupInput(InputManager& inputManager);
 
+    void updateCameraVectorsByEulerAngle();
+
+    void updateCameraVectors();
+
+
 private:
-  void updateCameraVectors();
 };
 
 #endif

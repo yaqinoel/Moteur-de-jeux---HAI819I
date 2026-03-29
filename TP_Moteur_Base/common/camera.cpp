@@ -10,15 +10,12 @@ Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch, float r
     : m_Front(glm::vec3(0.0f, 0.0f, -1.0f)), m_MovementSpeed(SPEED), m_MouseSensitivity(SENSITIVITY), m_Zoom(ZOOM), m_Aspect(ASPECT), m_ZNear(ZNEAR), m_ZFar(ZFAR)
 {
     m_Position = position;
-
-    m_WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    m_WorldUp = up;
     m_WorldFront = glm::vec3(0.0f, 0.0f, -1.0f);
     m_WorldRight = glm::vec3(1.0f, 0.0f, 0.0f);
 
-    glm::quat qYaw = glm::angleAxis(glm::radians(yaw), m_WorldUp);
-    glm::quat qPitch = glm::angleAxis(glm::radians(pitch), m_WorldRight);
-
-    m_Orientation = glm::normalize(qYaw * qPitch);
+    // 直接初始化 vec3
+    m_eulerAngle = glm::vec3(pitch, yaw, 0.0f);
 
     updateCameraVectors();
 }
@@ -56,15 +53,11 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset) {
     xoffset *= m_MouseSensitivity;
     yoffset *= m_MouseSensitivity;
 
-    // 水平旋转：绕世界垂直轴旋转
-    glm::quat qYaw = glm::angleAxis(glm::radians(-xoffset), m_WorldUp);
+    // 鼠标水平滑动改变 Yaw (Y分量)，垂直滑动改变 Pitch (X分量)
+    m_eulerAngle.y += xoffset;
+    m_eulerAngle.x += yoffset;
 
-    // 垂直旋转：绕相机当前的右轴(m_Right)旋转
-    glm::quat qPitch = glm::angleAxis(glm::radians(yoffset), m_WorldRight);
-
-    // 更新四元数：全局在左，局部在右
-    m_Orientation = glm::normalize(qYaw * m_Orientation * qPitch);
-
+    // 调用更新
     updateCameraVectors();
 }
 
@@ -78,11 +71,41 @@ void Camera::ProcessMouseScroll(float yoffset)
 }
 
 void Camera::updateCameraVectors() {
-    // 通过四元数旋转原始向量来得到新的方向
-    m_Front = glm::normalize(m_Orientation * m_WorldFront);
-    m_Up    = glm::normalize(m_Orientation * m_WorldUp);
-    m_Right = glm::normalize(m_Orientation * m_WorldRight);
-    m_eulerAngle = glm::degrees(glm::eulerAngles(m_Orientation));
+    if (m_eulerAngle.x > 89.0f)  m_eulerAngle.x = 89.0f;
+    if (m_eulerAngle.x < -89.0f) m_eulerAngle.x = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(m_eulerAngle.y)) * cos(glm::radians(m_eulerAngle.x));
+    front.y = sin(glm::radians(m_eulerAngle.x));
+    front.z = sin(glm::radians(m_eulerAngle.y)) * cos(glm::radians(m_eulerAngle.x));
+    m_Front = glm::normalize(front);
+
+    m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
+    m_Up    = glm::normalize(glm::cross(m_Right, m_Front));
+
+    glm::mat3 rotMat(m_Right, m_Up, -m_Front);
+    m_Orientation = glm::quat_cast(rotMat);
+}
+
+void Camera::updateCameraVectorsByEulerAngle() {
+    m_Pitch = m_eulerAngle.x;
+    m_Yaw   = m_eulerAngle.y;
+
+    if (m_Pitch > 89.0f) m_Pitch = 89.0f;
+    if (m_Pitch < -89.0f) m_Pitch = -89.0f;
+    m_eulerAngle.x = m_Pitch; // 将限制后的值写回 UI
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
+    front.y = sin(glm::radians(m_Pitch));
+    front.z = sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
+    m_Front = glm::normalize(front);
+
+    m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
+    m_Up    = glm::normalize(glm::cross(m_Right, m_Front));
+
+    glm::mat3 rotMat(m_Right, m_Up, -m_Front);
+    m_Orientation = glm::quat_cast(rotMat);
 }
 
 // 轨道模式
