@@ -11,9 +11,17 @@
 #include <GLFW/glfw3.h>
 
 #include "common/CubeObjet.hpp"
+#include "common/DataLogger.hpp"
 #include "common/GameObjet.hpp"
 #include "common/PlayerSystem.hpp"
 #include "common/TerrainSystem.hpp"
+
+// Include IMGUI
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
+#include "common/GUIManager.hpp"
 
 GLFWwindow *window;
 
@@ -58,7 +66,7 @@ std::string windowTitle = "Moteur de jeux";
 bool isWireframe = false;
 
 // 相机初始化参数
-Camera camera(glm::vec3(5.0f, 5.f, 5.f));
+Camera camera(glm::vec3(20.f, 6.f, 20.f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -70,6 +78,12 @@ InputManager inputManager;
 GameManager gameManager;
 TerrainSystem* terrainSystem = nullptr;
 CubeObjet* fallingCube = nullptr;
+
+// 日志记录器
+DataLogger* dataLogger = nullptr;
+
+// GUI管理器
+GUIManager * guiManager = nullptr;
 
 int main(void) {
   // Initialise GLFW
@@ -123,6 +137,10 @@ int main(void) {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
 
+  // Init ImGUI
+  guiManager = new GUIManager();
+  guiManager->initImgui(window);
+
   camera.SetupInput(inputManager);
   inputManager.SetContext("FreeMode");
 
@@ -134,9 +152,16 @@ int main(void) {
 
   // 初始化地形系统
   terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
-  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 1.0f, glm::vec3(0.0f, 4.0f, 0.0f));
+  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 1.0f, glm::vec3(0.0f, 10.0f, 0.0f));
   gameManager.AddStaticGameObject(terrainSystem);
   gameManager.AddDynamicGameObject(fallingCube);
+
+  fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
+  dataLogger = new DataLogger(fallingCube);
+  gameManager.setDataLogger(dataLogger);
+
+  guiManager->setTarget(fallingCube, terrainSystem, &camera);
+
 
   Time::intialize();
 
@@ -151,6 +176,8 @@ int main(void) {
     windowTitle =
         "TP5 - Physique Cube | FPS: " + std::to_string(Time::FPS);
     glfwSetWindowTitle(window, windowTitle.c_str());
+
+    guiManager->draw();
 
     // 更新场景
     gameManager.Update(dt);
@@ -170,6 +197,10 @@ int main(void) {
     objetShader.setVec3("viewPos", camera.m_Position);
 
     gameManager.Draw(view, projection, cone);
+
+    // Renders the ImGUI elements
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -194,7 +225,9 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
-  camera.ProcessMouseScroll(static_cast<float>(yoffset));
+  if (ImGui::GetCurrentContext() != nullptr && !ImGui::GetIO().WantCaptureMouse) {
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
+  }
 }
 
 void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
@@ -207,12 +240,15 @@ void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
     firstMouse = false;
   }
 
-  if (mouseClickDown) {
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-    lastX = xpos;
-    lastY = ypos;
-    camera.ProcessMouseMovement(xoffset, yoffset);
+  float xoffset = xpos - lastX;
+  float yoffset = lastY - ypos;
+  lastX = xpos;
+  lastY = ypos;
+
+  if (ImGui::GetCurrentContext() != nullptr && !ImGui::GetIO().WantCaptureMouse) {
+    if (mouseClickDown) {
+      camera.ProcessMouseMovement(xoffset, yoffset);
+    }
   }
 }
 
@@ -255,13 +291,20 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
     if (key == GLFW_KEY_SPACE) {
       gameManager.SwitchSimulationStatus();
-      fallingCube->SetVelocity(5.0f * (camera.m_Front + glm::vec3(0.0f, 1.0f, 0.0f)));
     }
 
     if (key == GLFW_KEY_R) {
       fallingCube->ResetStatus();
+      fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
       gameManager.StopSimulationStatus();
+    }
+
+    // 保存模拟数据
+    if (key == GLFW_KEY_K) {
+      dataLogger->exportToCSV("./outputs/simulationData/data.csv");
     }
 
   }
 }
+
+

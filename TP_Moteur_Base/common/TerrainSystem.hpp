@@ -36,8 +36,8 @@ public:
 
         // 挂在到场景树
         terrainNode = new SceneNode(terrainModel);
-        terrainNode->GetTransform().setScale(glm::vec3(50.0f));
-        terrainNode->GetTransform().setTranslation(glm::vec3(0.0f, -30.0f, 0.0f));
+        terrainNode->GetTransform().setScale(glm::vec3(50.0f,15.f,50.0f));
+        terrainNode->GetTransform().setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         sceneManager.GetRoot()->AddChild(terrainNode);
 
         PlanShape* planShape = new PlanShape(1.0f);
@@ -65,11 +65,10 @@ public:
                 float u = (float)i / (float)(res - 1);
                 float v = (float)j / (float)(res - 1);
 
-                // 直接在几何生成阶段，从缓存的高度图数据中读取并计算真实高度！
                 float y = GetHeightFromImage(u, v);
 
-                // vertex.Position = glm::vec3(x, y, z);
-                vertex.Position = glm::vec3(x, 0.f, z);
+                vertex.Position = glm::vec3(x, y, z);
+                // vertex.Position = glm::vec3(x, 0.f, z);
                 vertex.TexCoords = glm::vec2(u, v);
                 vertices.push_back(vertex);
             }
@@ -233,6 +232,9 @@ public:
 
 private:
     void LoadTexturesAndHeightmap() {
+        Texture tWater;
+        tWater.id = TextureFromFile("water.jpg","./resources/textures/");
+        tWater.type = "texture_diffuse"; m_textures.push_back(tWater);
         Texture tGrass;
         tGrass.id = TextureFromFile("grass.png","./resources/textures/");
         tGrass.type = "texture_diffuse"; m_textures.push_back(tGrass);

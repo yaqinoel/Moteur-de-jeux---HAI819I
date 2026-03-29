@@ -9,6 +9,7 @@ public:
     SceneManager sceneManager;
     std::vector<GameObjet*> dynamicObjects;
     std::vector<GameObjet*> staticObjects;
+    DataLogger* datalogger;
 
     bool m_isSimulating = false;
 
@@ -48,6 +49,7 @@ public:
         // 物理更新
         glm::vec3 gravity(0.0f, -9.81f, 0.0f);
         for (GameObjet* obj : dynamicObjects) {
+            datalogger->sample(deltaTime);
             if (obj->physicsModel && obj->physicsModel->isDynamic()) {
                 obj->physicsModel->AddForce(gravity * obj->physicsModel->m_mass);
                 obj->physicsModel->Integrate(deltaTime);
@@ -58,8 +60,27 @@ public:
         for (GameObjet* dynObj : dynamicObjects) {
             for (GameObjet* statObj : staticObjects) {
 
+                // if (statObj->physicsModel->m_shape->GetType() == ShapeType::PLAN) {
+                //     float groundY = statObj->physicsModel->m_physicsPosition.y; // 假设是 0
+                //     CubeShape* dynCube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
+                //     float bottomY = dynObj->physicsModel->m_physicsPosition.y - dynCube->m_halfExtent;
+                //
+                //     if (bottomY < groundY) {
+                //         // 修正位置
+                //         dynObj->physicsModel->m_physicsPosition.y = groundY + dynCube->m_halfExtent;
+                //         // dynObj->physicsModel->m_velocity = glm::vec3(0.f);
+                //
+                //         // 反弹
+                //         dynObj->physicsModel->m_velocity.y *= -0.7f;
+                //         dynObj->physicsModel->m_velocity.x *= 0.95f;
+                //         dynObj->physicsModel->m_velocity.z *= 0.95f;
+                //     }
+                // }
+
                 if (statObj->physicsModel->m_shape->GetType() == ShapeType::PLAN) {
-                    float groundY = statObj->physicsModel->m_physicsPosition.y; // 假设是 0
+                    glm::vec3 dynamicPosition = dynObj->physicsModel->m_physicsPosition;
+                    TerrainSystem* terrain = static_cast<TerrainSystem*>(statObj);
+                    float groundY = terrain->GetHeightAt(dynamicPosition.x, dynamicPosition.z);
                     CubeShape* dynCube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
                     float bottomY = dynObj->physicsModel->m_physicsPosition.y - dynCube->m_halfExtent;
 
@@ -106,6 +127,9 @@ public:
         std::cout << "Physics Simulation Stopped!" << std::endl;
     }
 
+    void setDataLogger(DataLogger* _dataLogger) {
+        datalogger = _dataLogger;
+    }
 
 };
 

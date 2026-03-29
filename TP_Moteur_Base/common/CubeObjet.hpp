@@ -42,7 +42,6 @@ public:
 
     void ResetStatus() {
         physicsModel->m_physicsPosition = m_startPosition;
-        physicsModel->m_velocity = glm::vec3(0.0f);
     }
 
 

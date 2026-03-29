@@ -59,6 +59,8 @@ add_definitions(
 	-D_CRT_SECURE_NO_WARNINGS
 )
 
+file( GLOB IMGUIC imgui/*.cpp)
+file( GLOB IMGUIH imgui/*.h)
 add_executable(TP_Moteur_Base
 		src/main.cpp
 		common/shader.cpp
@@ -82,7 +84,11 @@ add_executable(TP_Moteur_Base
 		common/SceneNode.hpp
 		common/SceneManager.cpp
 		common/SceneManager.hpp
+
+		${IMGUIH}
+		${IMGUIC}
 )
+
 target_link_libraries(TP_Moteur_Base
 	${ALL_LIBS}
 )
@@ -92,6 +98,7 @@ create_target_launcher(TP_Moteur_Base WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_
 
 
 SOURCE_GROUP(common REGULAR_EXPRESSION ".*/common/.*" )
+SOURCE_GROUP(common REGULAR_EXPRESSION ".*/imgui/.*" )
 SOURCE_GROUP(shaders REGULAR_EXPRESSION ".*/.*shader$" )
 
 

@@ -6,7 +6,8 @@ enum class ShapeType {
     CUBE,
     BOX,
     SPHERE,
-    PLAN
+    PLAN,
+    TERRAIN
 };
 
 class ColliderShape {
@@ -50,5 +51,7 @@ public:
 
     float GetHalfExtents() const { return m_halfExtents; }
 };
+
+
 
 #endif //COLLIDERSHAPE_HPP

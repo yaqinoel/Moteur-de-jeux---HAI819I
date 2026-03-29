@@ -79,9 +79,9 @@ void Camera::ProcessMouseScroll(float yoffset)
 
 void Camera::updateCameraVectors() {
     // 通过四元数旋转原始向量来得到新的方向
-    m_Front = m_Orientation * m_WorldFront;
-    m_Up    = m_Orientation * m_WorldUp;
-    m_Right = m_Orientation * m_WorldRight;
+    m_Front = glm::normalize(m_Orientation * m_WorldFront);
+    m_Up    = glm::normalize(m_Orientation * m_WorldUp);
+    m_Right = glm::normalize(m_Orientation * m_WorldRight);
     m_eulerAngle = glm::degrees(glm::eulerAngles(m_Orientation));
 }
 
