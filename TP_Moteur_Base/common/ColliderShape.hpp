@@ -52,6 +52,13 @@ public:
     float GetHalfExtents() const { return m_halfExtents; }
 };
 
+class TerrainShape : public ColliderShape {
+public:
+
+    TerrainShape()
+        : ColliderShape(ShapeType::TERRAIN){}
+};
+
 
 
 #endif //COLLIDERSHAPE_HPP

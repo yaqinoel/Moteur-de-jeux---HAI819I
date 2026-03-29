@@ -40,8 +40,8 @@ public:
         terrainNode->GetTransform().setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         sceneManager.GetRoot()->AddChild(terrainNode);
 
-        PlanShape* planShape = new PlanShape(1.0f);
-        physicsModel = new PhysicsModel(planShape, 0.0f, terrainNode->GetTransform().getTranslation());
+        TerrainShape* terrain_shape = new TerrainShape();
+        physicsModel = new PhysicsModel(terrain_shape, 0.0f, terrainNode->GetTransform().getTranslation());
 
         SyncTransform();
     }
@@ -227,6 +227,68 @@ public:
         } else {
             return barycentric(p00, p10, p11, glm::vec2(worldX, worldZ));
         }
+    }
+
+    glm::vec3 GetNormalAt(float worldX, float worldZ) {
+        // 安全检查，如果没有网格数据则返回默认朝上的法线
+        if (terrainModel->meshes.empty()) return glm::vec3(0.0f, 1.0f, 0.0f);
+        Mesh& mesh = terrainModel->meshes[0];
+
+        // 获取地形的缩放和位移
+        glm::vec3 scale = terrainNode->GetTransform().getScale();
+        glm::vec3 pos = terrainNode->GetTransform().getTranslation();
+
+        // 将世界坐标转换回局部网格坐标
+        float localX = (worldX - pos.x) / scale.x;
+        float localZ = (worldZ - pos.z) / scale.z;
+
+        float gridCoordX = (localX + 1.0f) / 2.0f * (resolution - 1);
+        float gridCoordZ = (localZ + 1.0f) / 2.0f * (resolution - 1);
+
+        int gridX = (int)std::floor(gridCoordX);
+        int gridZ = (int)std::floor(gridCoordZ);
+
+        // 越界检查：如果物体掉出地形边界，默认返回平地法线
+        if (gridX < 0 || gridX >= resolution - 1 || gridZ < 0 || gridZ >= resolution - 1) {
+            return glm::vec3(0.0f, 1.0f, 0.0f);
+        }
+
+        float tx = gridCoordX - gridX;
+        float tz = gridCoordZ - gridZ;
+
+        // 获取当前网格4个顶点的索引
+        int v00 = gridX * resolution + gridZ;
+        int v10 = (gridX + 1) * resolution + gridZ;
+        int v01 = gridX * resolution + (gridZ + 1);
+        int v11 = (gridX + 1) * resolution + (gridZ + 1);
+
+        // 获取 4 个顶点的世界坐标位置
+        glm::vec3 p00 = mesh.vertices[v00].Position * scale + pos;
+        glm::vec3 p10 = mesh.vertices[v10].Position * scale + pos;
+        glm::vec3 p01 = mesh.vertices[v01].Position * scale + pos;
+        glm::vec3 p11 = mesh.vertices[v11].Position * scale + pos;
+
+        glm::vec3 normal;
+
+        // 根据对角线判断落在哪个三角形内，并计算几何法线
+        if (tx <= tz) {
+            // 落在左上角三角形: 顶点为 p00, p01, p11
+            glm::vec3 edge1 = p01 - p00;
+            glm::vec3 edge2 = p11 - p00;
+            // 叉乘计算法线
+            normal = glm::normalize(glm::cross(edge1, edge2));
+        } else {
+            // 落在右下角三角形: 顶点为 p00, p11, p10
+            glm::vec3 edge1 = p11 - p00;
+            glm::vec3 edge2 = p10 - p00;
+            normal = glm::normalize(glm::cross(edge1, edge2));
+        }
+
+        if (normal.y < 0.0f) {
+            normal = -normal;
+        }
+
+        return normal;
     }
 
 

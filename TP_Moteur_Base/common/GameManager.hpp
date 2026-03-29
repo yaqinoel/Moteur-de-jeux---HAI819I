@@ -59,28 +59,13 @@ public:
         // 碰撞检测与响应
         for (GameObjet* dynObj : dynamicObjects) {
             for (GameObjet* statObj : staticObjects) {
-
-                // if (statObj->physicsModel->m_shape->GetType() == ShapeType::PLAN) {
-                //     float groundY = statObj->physicsModel->m_physicsPosition.y; // 假设是 0
-                //     CubeShape* dynCube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
-                //     float bottomY = dynObj->physicsModel->m_physicsPosition.y - dynCube->m_halfExtent;
-                //
-                //     if (bottomY < groundY) {
-                //         // 修正位置
-                //         dynObj->physicsModel->m_physicsPosition.y = groundY + dynCube->m_halfExtent;
-                //         // dynObj->physicsModel->m_velocity = glm::vec3(0.f);
-                //
-                //         // 反弹
-                //         dynObj->physicsModel->m_velocity.y *= -0.7f;
-                //         dynObj->physicsModel->m_velocity.x *= 0.95f;
-                //         dynObj->physicsModel->m_velocity.z *= 0.95f;
-                //     }
-                // }
-
-                if (statObj->physicsModel->m_shape->GetType() == ShapeType::PLAN) {
+                if (statObj->physicsModel->m_shape->GetType() == ShapeType::TERRAIN) {
                     glm::vec3 dynamicPosition = dynObj->physicsModel->m_physicsPosition;
                     TerrainSystem* terrain = static_cast<TerrainSystem*>(statObj);
+
                     float groundY = terrain->GetHeightAt(dynamicPosition.x, dynamicPosition.z);
+                    glm::vec3 groundNormal = terrain->GetNormalAt(dynamicPosition.x, dynamicPosition.z);
+
                     CubeShape* dynCube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
                     float bottomY = dynObj->physicsModel->m_physicsPosition.y - dynCube->m_halfExtent;
 
@@ -89,10 +74,16 @@ public:
                         dynObj->physicsModel->m_physicsPosition.y = groundY + dynCube->m_halfExtent;
                         // dynObj->physicsModel->m_velocity = glm::vec3(0.f);
 
+                        glm::vec3 WorldUp(0.0f, 1.0f, 0.0f);
+
+                        glm::quat alignQuat = glm::rotation(WorldUp, groundNormal);
+                        glm::vec3 targetEuler = glm::degrees(glm::eulerAngles(alignQuat));
+                        dynObj->sceneNode->GetTransform().setRotation(targetEuler);
+
                         // 反弹
-                        dynObj->physicsModel->m_velocity.y *= -0.7f;
-                        dynObj->physicsModel->m_velocity.x *= 0.95f;
-                        dynObj->physicsModel->m_velocity.z *= 0.95f;
+                        // dynObj->physicsModel->m_velocity.y *= -0.7f;
+                        dynObj->physicsModel->m_velocity.x *= 0.999f;
+                        dynObj->physicsModel->m_velocity.z *= 0.999f;
                     }
                 }
             }
