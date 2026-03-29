@@ -68,9 +68,9 @@ public:
 
         // 旋转控制 (欧拉角)
         if (ImGui::CollapsingHeader("Rotation", ImGuiTreeNodeFlags_DefaultOpen)) {
-            // Yaw 通常是 0-360，Pitch 限制在 -89 到 89 防止万向锁翻转
-            if (ImGui::SliderFloat("Yaw", &camera.m_Yaw, -180.0f, 180.0f));
-            if (ImGui::SliderFloat("Pitch", &camera.m_Pitch, -89.0f, 89.0f));
+            if (ImGui::DragFloat3("Euler Angles", &camera.m_eulerAngle.x, 0.5f)) {
+                camera.updateCameraVectors();
+            }
 
             ImGui::Separator();
             ImGui::Text("Orientation (Quaternion):");
@@ -78,7 +78,7 @@ public:
                 camera.m_Orientation.w, camera.m_Orientation.x, camera.m_Orientation.y, camera.m_Orientation.z);
         }
 
-        // 镜头参数 (Lens / Projection)
+        // 镜头参数
         if (ImGui::CollapsingHeader("Lens Settings")) {
             ImGui::SliderFloat("FOV (Zoom)", &camera.m_Zoom, 1.0f, 90.0f);
             ImGui::DragFloat("Near Plane", &camera.m_ZNear, 0.01f, 0.001f, 1.0f);

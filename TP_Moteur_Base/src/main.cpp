@@ -66,7 +66,7 @@ std::string windowTitle = "Moteur de jeux";
 bool isWireframe = false;
 
 // 相机初始化参数
-Camera camera(glm::vec3(20.f, 6.f, 20.f));
+Camera camera(glm::vec3(8.f, 5.f, 25.f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -152,11 +152,11 @@ int main(void) {
 
   // 初始化地形系统
   terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
-  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 1.0f, glm::vec3(0.0f, 10.0f, 0.0f));
+  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 1.0f, glm::vec3(2.0f, 7.5f, -3.0f));
   gameManager.AddStaticGameObject(terrainSystem);
   gameManager.AddDynamicGameObject(fallingCube);
 
-  fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
+  // fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
   dataLogger = new DataLogger(fallingCube);
   gameManager.setDataLogger(dataLogger);
 
@@ -295,7 +295,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
     if (key == GLFW_KEY_R) {
       fallingCube->ResetStatus();
-      fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
+      // fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
       gameManager.StopSimulationStatus();
     }
 

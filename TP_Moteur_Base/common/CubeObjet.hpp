@@ -23,6 +23,7 @@ public:
         // 挂载到场景树上
         sceneNode = new SceneNode(renderingModel);
         sceneNode->GetTransform().setTranslation(m_startPosition);
+        sceneNode->GetTransform().setRotation(glm::vec3(0.f,20.f,0.f));
         sceneManager.GetRoot()->AddChild(sceneNode);
 
         // 物理数据初始化

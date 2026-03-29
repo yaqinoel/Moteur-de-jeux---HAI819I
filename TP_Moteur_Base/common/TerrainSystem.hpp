@@ -36,7 +36,7 @@ public:
 
         // 挂在到场景树
         terrainNode = new SceneNode(terrainModel);
-        terrainNode->GetTransform().setScale(glm::vec3(50.0f,15.f,50.0f));
+        terrainNode->GetTransform().setScale(glm::vec3(50.0f,20.f,50.0f));
         terrainNode->GetTransform().setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         sceneManager.GetRoot()->AddChild(terrainNode);
 
