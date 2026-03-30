@@ -21,8 +21,8 @@ public:
     std::vector<unsigned char> m_heightmapData;
     int m_hmWidth = 0, m_hmHeight = 0;
 
-    float m_us = 0.9;
-    float m_uk = 0.8;
+    float m_us = 0.99;
+    float m_uk = 0.9;
     float m_water_level = 0.f;
     float p_water = 1000;
     float p_air = 1;

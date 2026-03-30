@@ -141,11 +141,60 @@ public:
             }
         }
 
+        // 浮力检测
+        float water_level = 0.f;
+        float rou_water = 1000.f;
+        float rou_air = 1.f;
+        glm::vec3 water_normal = glm::vec3(0.f,1.f,0.f);
+        for (GameObjet* dynObj : dynamicObjects) {
+            // 检测物体是否入水
+            CubeShape* dynCube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
+            glm::vec3 objetPosition = dynObj->physicsModel->m_physicsPosition;
+            float half_extends = dynCube->m_halfExtent;
+            // 物体中心落水
+            if (objetPosition.y - half_extends < water_level) {
+                // 计算浮力
+                float volume = 0.f;
+                float height_in_water = 2 * half_extends;
+                if (objetPosition.y + half_extends > water_level) {
+                    height_in_water = half_extends + (water_level - objetPosition.y);
+                }
+                volume = 4 * half_extends * half_extends * height_in_water;
+                glm::vec3 flottaisonForce = -rou_water * GRAVITY * volume *  water_normal;
+                dynObj->physicsModel->AddForce(flottaisonForce);
+
+                // 计算水的阻力
+                glm::vec3 currentVelocity = dynObj->physicsModel->m_velocity;
+                float submergedRatio = height_in_water / (2.0f * half_extends);
+                // 流体阻力系数
+                float fluidDragCoefficient = 100.0f;
+                // 简单的线性阻力模型阻力方向与速度相反
+                glm::vec3 dragForce = -fluidDragCoefficient * submergedRatio * currentVelocity;
+                dynObj->physicsModel->AddForce(dragForce);
+
+                // 调整旋转姿态
+                glm::vec3 currentEuler = dynObj->sceneNode->GetTransform().getRotation();
+                glm::quat currentQuat = glm::quat(glm::radians(currentEuler));
+                glm::vec3 targetEuler = glm::vec3(0.0f, currentEuler.y, 0.0f);
+                glm::quat targetQuat = glm::quat(glm::radians(targetEuler));
+
+                // 根据浸入深度计算插值权重
+                float alignSpeed = 5.0f;
+                float blendFactor = glm::clamp(submergedRatio * alignSpeed * deltaTime, 0.0f, 1.0f);
+                glm::quat newQuat = glm::slerp(currentQuat, targetQuat, blendFactor);
+
+                // 将新姿态应用回物体
+                dynObj->sceneNode->GetTransform().setRotation(glm::degrees(glm::eulerAngles(newQuat)));
+            }
+        }
+
         // 物理更新
         for (GameObjet* obj : dynamicObjects) {
             datalogger->sample(deltaTime);
             if (obj->physicsModel && obj->physicsModel->isDynamic()) {
+                // 添加重力
                 obj->physicsModel->AddForce(GRAVITY * obj->physicsModel->m_mass);
+
                 obj->physicsModel->Integrate(deltaTime);
             }
         }

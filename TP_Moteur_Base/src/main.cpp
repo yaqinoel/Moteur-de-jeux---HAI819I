@@ -15,6 +15,7 @@
 #include "common/GameObjet.hpp"
 #include "common/PlayerSystem.hpp"
 #include "common/TerrainSystem.hpp"
+#include "common/WaterSystem.hpp"
 
 // Include IMGUI
 #include <imgui/imgui.h>
@@ -22,6 +23,8 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include "common/GUIManager.hpp"
+#include "common/WaterSystem.hpp"
+#include "common/WaterSystem.hpp"
 
 GLFWwindow *window;
 
@@ -77,6 +80,7 @@ InputManager inputManager;
 
 GameManager gameManager;
 TerrainSystem* terrainSystem = nullptr;
+WaterSystem* waterTerrain = nullptr;
 CubeObjet* fallingCube = nullptr;
 
 // 日志记录器
@@ -135,6 +139,8 @@ int main(void) {
   glClearColor(0.1f, 0.1f, 0.1f, 0.0f); // Space color
 
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDepthFunc(GL_LESS);
 
   // Init ImGUI
@@ -149,10 +155,13 @@ int main(void) {
                        "./resources/shaders/fragment_shader_terrain.glsl");
   Shader objetShader("./resources/shaders/vertex_shader_bunny.glsl",
                        "./resources/shaders/fragment_shader_bunny.glsl");
+  Shader waterShader("./resources/shaders/vertex_shader_water.glsl",
+                       "./resources/shaders/fragment_shader_water.glsl");
 
   // 初始化地形系统
   terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
-  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 1.0f, glm::vec3(7.5f, 10.5f, -3.0f));
+  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 600.0f, glm::vec3(7.5f, 10.5f, -3.0f));
+  waterTerrain = new WaterSystem(gameManager.sceneManager, &waterShader, 16);
   gameManager.AddStaticGameObject(terrainSystem);
   gameManager.AddDynamicGameObject(fallingCube);
 
