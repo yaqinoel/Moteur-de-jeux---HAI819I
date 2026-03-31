@@ -3,6 +3,8 @@
 
 #include "camera.hpp"
 #include "CubeObjet.hpp"
+#include "GameManager.hpp"
+#include "NormalObjet.hpp"
 #include "TerrainSystem.hpp"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -20,10 +22,13 @@ public:
         ImGui_ImplOpenGL3_Init("#version 330");
     }
 
-    void setTarget(CubeObjet* cube, TerrainSystem* terrain, Camera* camera) {
+    void setTarget(CubeObjet* cube, TerrainSystem* terrain, Camera* camera, NormalObjet* earth, NormalObjet* moon, GameManager* gameManager) {
         m_cube = cube;
         m_terrain = terrain;
         m_camera = camera;
+        m_earth = earth;
+        m_moon = moon;
+        m_gameManager = gameManager;
     }
 
     void draw() {
@@ -52,10 +57,90 @@ public:
                 ImGui::EndTabItem();
             }
 
+            if (m_earth && m_moon && ImGui::BeginTabItem("Solar")) {
+                DrawPlaneteGUI(*m_earth, *m_moon);
+                ImGui::EndTabItem();
+            }
+
             ImGui::EndTabBar();
         }
 
         ImGui::End();
+    }
+
+    void DrawPlaneteGUI(NormalObjet& earth, NormalObjet& moon) {
+        if (ImGui::CollapsingHeader("Gravity Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+            // 地球控制面板
+            ImGui::PushID("Earth"); // 压入地球的 ID，防止控件冲突
+            ImGui::TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "Earth (Massive Body)");
+            ImGui::Separator();
+
+            // 控制质量 (范围可以设大一点，比如 100 到 10000)
+            ImGui::DragFloat("Mass", &earth.physicsModel->m_mass, 10.0f, 1.0f, 100000.0f, "%.1f");
+
+            // 控制位置 (拖动时实时同步到渲染节点)
+            if (ImGui::DragFloat3("Position", &earth.physicsModel->m_physicsPosition.x, 0.1f)) {
+                earth.SyncTransform();
+            }
+
+            // 控制速度
+            ImGui::DragFloat3("Velocity", &earth.physicsModel->m_velocity.x, 0.05f);
+
+            // 控制缩放 (可选，纯视觉效果)
+            glm::vec3 earthScale = earth.sceneNode->GetTransform().getScale();
+            if (ImGui::DragFloat("Scale", &earthScale.x, 0.01f, 0.1f, 10.0f)) {
+                earth.sceneNode->GetTransform().setScale(glm::vec3(earthScale.x));
+            }
+            ImGui::PopID(); // 弹出地球的 ID
+
+            ImGui::Spacing();
+            ImGui::Spacing();
+
+            // 月球控制面板
+            ImGui::PushID("Moon"); // 压入月球的 ID
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Moon (Orbiting Body)");
+            ImGui::Separator();
+
+            // 控制质量
+            ImGui::DragFloat("Mass", &moon.physicsModel->m_mass, 5.0f, 1.0f, 10000.0f, "%.1f");
+
+            // 控制位置
+            if (ImGui::DragFloat3("Position", &moon.physicsModel->m_physicsPosition.x, 0.1f)) {
+                moon.SyncTransform();
+            }
+
+            // 控制速度
+            ImGui::DragFloat3("Velocity", &moon.physicsModel->m_velocity.x, 0.05f);
+
+            // 控制缩放
+            glm::vec3 moonScale = moon.sceneNode->GetTransform().getScale();
+            if (ImGui::DragFloat("Scale", &moonScale.x, 0.01f, 0.01f, 10.0f)) {
+                moon.sceneNode->GetTransform().setScale(glm::vec3(moonScale.x));
+            }
+            ImGui::PopID(); // 弹出月球的 ID
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            // 实时数据监控面板 (只读)
+            ImGui::Text("Simulation Info:");
+
+            // 计算两星距离
+            glm::vec3 dir = moon.physicsModel->m_physicsPosition - earth.physicsModel->m_physicsPosition;
+            float distance = glm::length(dir);
+            ImGui::TextDisabled("Distance: %.2f units", distance);
+
+            // 可以在这里加一个重置按钮，方便玩坏了重新开始
+            if (ImGui::Button("Reset Positions & Velocity", ImVec2(-1, 0))) {
+                m_gameManager->StopSimulationStatus();
+                moon.physicsModel->m_physicsPosition = glm::vec3(25.0f, 45.0f, 25.0f);
+                moon.physicsModel->m_velocity = glm::vec3(0.0f, 0.0f, 100.0f);
+                moon.SyncTransform();
+            }
+        }
+
+
     }
 
     void DrawCameraGUI(Camera& camera) {
@@ -212,6 +297,9 @@ private:
     CubeObjet* m_cube = nullptr;
     TerrainSystem* m_terrain = nullptr;
     Camera* m_camera = nullptr;
+    NormalObjet* m_earth = nullptr;
+    NormalObjet* m_moon = nullptr;
+    GameManager* m_gameManager = nullptr;
 };
 
 

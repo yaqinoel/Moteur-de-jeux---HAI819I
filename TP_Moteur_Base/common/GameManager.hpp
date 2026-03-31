@@ -49,7 +49,7 @@ public:
             return;
         }
 
-        // 碰撞检测与响应
+        // 碰撞检测与响应和摩擦力
         for (GameObjet* dynObj : dynamicObjects) {
             for (GameObjet* statObj : staticObjects) {
                 if (statObj->physicsModel->m_shape->GetType() == ShapeType::TERRAIN) {
@@ -188,15 +188,28 @@ public:
             }
         }
 
+        // 添加万有引力和重力
+        for (GameObjet* obj : dynamicObjects) {
+            if (obj->physicsModel && obj->physicsModel->isDynamic() && !obj->physicsModel->m_isGravity && !obj->physicsModel->m_isFixed) {
+                for (GameObjet* statObj : staticObjects) {
+                    float mass = statObj->physicsModel->m_mass;
+                    glm::vec3 direction = obj->physicsModel->m_physicsPosition - statObj->physicsModel->m_physicsPosition;
+                    glm::vec3 universalForce = GRAVITY.y * mass * obj->physicsModel-> m_mass * direction;
+                    obj->physicsModel->AddForce(universalForce);
+                }
+            }
+
+            // 添加重力
+            if (obj->physicsModel && obj->physicsModel->isDynamic() && obj->physicsModel->m_isGravity) {
+                obj->physicsModel->AddForce(GRAVITY * obj->physicsModel->m_mass);
+            }
+        }
+
         // 物理更新
         for (GameObjet* obj : dynamicObjects) {
             datalogger->sample(deltaTime);
-            if (obj->physicsModel && obj->physicsModel->isDynamic()) {
-                // 添加重力
-                obj->physicsModel->AddForce(GRAVITY * obj->physicsModel->m_mass);
-
-                obj->physicsModel->Integrate(deltaTime);
-            }
+            // 迭代位置
+            obj->physicsModel->Integrate(deltaTime);
         }
 
         // 状态同步

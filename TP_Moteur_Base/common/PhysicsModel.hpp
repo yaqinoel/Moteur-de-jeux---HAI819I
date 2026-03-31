@@ -21,13 +21,18 @@ public:
     // 碰撞形状
     ColliderShape* m_shape;
 
+    bool m_isFixed;
+    bool m_isGravity;
+
     // 构造函数
     PhysicsModel(ColliderShape* shape, float mass, glm::vec3 startPos)
         : m_shape(shape),
           m_mass(mass),
           m_physicsPosition(startPos),
           m_velocity(glm::vec3(0.0f)),
-          m_force(glm::vec3(0.0f)) {}
+          m_force(glm::vec3(0.0f)),
+          m_isFixed(false),
+          m_isGravity(true){}
 
     ~PhysicsModel() {
         delete m_shape;

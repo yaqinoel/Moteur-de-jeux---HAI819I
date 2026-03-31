@@ -23,6 +23,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include "common/GUIManager.hpp"
+#include "common/NormalObjet.hpp"
 #include "common/WaterSystem.hpp"
 #include "common/WaterSystem.hpp"
 
@@ -69,7 +70,7 @@ std::string windowTitle = "Moteur de jeux";
 bool isWireframe = false;
 
 // 相机初始化参数
-Camera camera(glm::vec3(8.f, 5.f, 25.f));
+Camera camera(glm::vec3(40.f, 60.f, 55.f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -82,6 +83,8 @@ GameManager gameManager;
 TerrainSystem* terrainSystem = nullptr;
 WaterSystem* waterTerrain = nullptr;
 CubeObjet* fallingCube = nullptr;
+NormalObjet* moon = nullptr;
+NormalObjet* earth = nullptr;
 
 // 日志记录器
 DataLogger* dataLogger = nullptr;
@@ -157,19 +160,32 @@ int main(void) {
                        "./resources/shaders/fragment_shader_bunny.glsl");
   Shader waterShader("./resources/shaders/vertex_shader_water.glsl",
                        "./resources/shaders/fragment_shader_water.glsl");
+  Shader planeteShader("./resources/shaders/vertex_shader_normal_objet.glsl",
+                       "./resources/shaders/fragment_shader_normal_objet.glsl");
 
   // 初始化地形系统
   terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
   fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 600.0f, glm::vec3(7.5f, 10.5f, -3.0f));
   waterTerrain = new WaterSystem(gameManager.sceneManager, &waterShader, 16);
+  earth = new NormalObjet(gameManager.sceneManager, &planeteShader, "./resources/models/planete/earth.obj", 3.f,1.f, glm::vec3(0.,45.,0.));
+  earth->physicsModel->m_isFixed = true;
+  earth->physicsModel->m_isGravity = false;
+
+  moon = new NormalObjet(gameManager.sceneManager, &planeteShader,"./resources/models/planete/moon.obj", 1.f, 1.f, glm::vec3(25.,45.,25.));
+  moon->physicsModel->m_isGravity = false;
+  moon->physicsModel->m_velocity = glm::vec3(0.f, 0.f, 100.f);
+
   gameManager.AddStaticGameObject(terrainSystem);
   gameManager.AddDynamicGameObject(fallingCube);
+
+  gameManager.AddStaticGameObject(earth);
+  gameManager.AddDynamicGameObject(moon);
 
   fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
   dataLogger = new DataLogger(fallingCube);
   gameManager.setDataLogger(dataLogger);
 
-  guiManager->setTarget(fallingCube, terrainSystem, &camera);
+  guiManager->setTarget(fallingCube, terrainSystem, &camera, earth, moon, &gameManager);
 
 
   Time::intialize();

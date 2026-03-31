@@ -7,7 +7,8 @@ enum class ShapeType {
     BOX,
     SPHERE,
     PLAN,
-    TERRAIN
+    TERRAIN,
+    EMPTY
 };
 
 class ColliderShape {
@@ -42,6 +43,16 @@ public:
     glm::vec3 GetHalfExtents() const { return m_halfExtents; }
 };
 
+class SphereShape : public ColliderShape {
+public:
+    float m_radius;
+
+    SphereShape(const float& radius)
+        : ColliderShape(ShapeType::SPHERE), m_radius(radius) {}
+
+    float GetRadius() const { return m_radius; }
+};
+
 class PlanShape : public ColliderShape {
 public:
     float m_halfExtents;
@@ -57,6 +68,15 @@ public:
 
     TerrainShape()
         : ColliderShape(ShapeType::TERRAIN){}
+};
+
+
+class EmptyShape : public ColliderShape {
+public:
+
+    EmptyShape()
+        : ColliderShape(ShapeType::EMPTY) {}
+
 };
 
 
