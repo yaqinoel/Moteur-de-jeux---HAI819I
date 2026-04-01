@@ -3,12 +3,25 @@
 
 #include "SceneManager.hpp"
 #include "GameObjet.hpp"
+#include "Ressort.hpp"
+
+struct ContactInfo {
+    bool hasCollision = false;
+    glm::vec3 normal;
+    float penetrationDepth = 0.f;
+    float us = 0.f;
+    float uk = 0.f;
+
+    // PhysicsModel* objA;
+    // PhysicsModel* objB;
+};
 
 class GameManager {
 public:
     SceneManager sceneManager;
     std::vector<GameObjet*> dynamicObjects;
     std::vector<GameObjet*> staticObjects;
+    std::vector<Ressort*> resorts;
     DataLogger* datalogger;
 
     bool m_isSimulating = false;
@@ -39,6 +52,10 @@ public:
         staticObjects.push_back(obj);
     }
 
+    void AddResort(Ressort* ressort) {
+        resorts.push_back(ressort);
+    }
+
     // 更新状态
     void Update(float deltaTime) {
         if(!m_isSimulating) {
@@ -52,88 +69,63 @@ public:
         // 碰撞检测与响应和摩擦力
         for (GameObjet* dynObj : dynamicObjects) {
             for (GameObjet* statObj : staticObjects) {
-                if (statObj->physicsModel->m_shape->GetType() == ShapeType::TERRAIN) {
-                    TerrainSystem* terrain = static_cast<TerrainSystem*>(statObj);
-                    CubeShape* dynCube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
 
-                    glm::vec3 centerPosition = dynObj->physicsModel->m_physicsPosition;
+                // 调用统一碰撞检测接口
+                ContactInfo contact = CheckCollision(dynObj, statObj);
 
-                    // 获取地形处法线
-                    float groundY = terrain->GetHeightAt(centerPosition.x, centerPosition.z);
-                    glm::vec3 groundNormal = terrain->GetNormalAt(centerPosition.x, centerPosition.z);
+                // 如果发生碰撞
+                if (contact.hasCollision) {
+                    // 修正位置
+                    if (contact.penetrationDepth > 0.f) {
+                        dynObj->physicsModel->m_physicsPosition += contact.normal * contact.penetrationDepth;
+                    }
 
-                    // 中心点到地面垂直距离
-                    float distToPlane = (centerPosition.y - groundY) * groundNormal.y;
+                    // 消除砸向地面的速度
+                    float vDotN = glm::dot(dynObj->physicsModel->m_velocity, contact.normal);
+                    if (vDotN < 0.0f) {
+                        dynObj->physicsModel->m_velocity -= vDotN * contact.normal;
+                    }
 
-                    float radius = dynCube->m_halfExtent;
-                    float contactTolerance = 0.01f;
+                    // 计算支持力
+                    glm::vec3 forceGravity = GRAVITY * dynObj->physicsModel->m_mass;
+                    glm::vec3 forceNormal = -(glm::dot(forceGravity, contact.normal)) * contact.normal;
+                    dynObj->physicsModel->AddForce(forceNormal);
 
-                    // 发生碰撞
-                    if (distToPlane < radius + contactTolerance) {
+                    // 计算摩擦力
+                    float us = contact.us;
+                    float uk = contact.uk;
+                    float velocityEpsilon = 0.01f;
+                    float forceNormalMagnitude = glm::length(forceNormal);
+                    glm::vec3 currentSpeed = dynObj->physicsModel->m_velocity;
+                    float speedMagnitude = glm::length(currentSpeed);
 
-                        // 修正位置
-                        if (distToPlane < radius) {
-                            float penetrationDepth = radius - distToPlane;
-                            dynObj->physicsModel->m_physicsPosition += groundNormal * penetrationDepth;
+                    // 动摩擦力
+                    if (speedMagnitude > velocityEpsilon) {
+                        glm::vec3 moveDir = glm::normalize(currentSpeed);glm::vec3 forceFriction = -moveDir * (forceNormalMagnitude * uk);
+                        float frictionAccel = (forceNormalMagnitude * uk) / dynObj->physicsModel->m_mass;
+                        if (frictionAccel * deltaTime >= speedMagnitude) {
+                            dynObj->physicsModel->m_velocity = glm::vec3(0.0f);
+                        } else {
+                            dynObj->physicsModel->AddForce(forceFriction);
                         }
-                        float penetrationDepth = radius - distToPlane;
-                        // dynObj->physicsModel->m_velocity = glm::vec3(0.f);
+                    }
+                    // 静摩擦力
+                    else {
+                        glm::vec3 forceTangential = forceGravity + forceNormal;
+                        float tangentialMagnitude = glm::length(forceTangential);
 
-                        // 消除砸向地面的速度
-                        float vDotN = glm::dot(dynObj->physicsModel->m_velocity, groundNormal);
-                        if (vDotN < 0.0f) {
-                            dynObj->physicsModel->m_velocity -= vDotN * groundNormal;
-                        }
+                        // 计算最大静摩擦力极限
+                        float maxStaticFriction = forceNormalMagnitude * us;
 
-                        // 更新角度
-                        glm::vec3 WorldUp(0.0f, 1.0f, 0.0f);
-                        glm::quat alignQuat = glm::rotation(WorldUp, groundNormal);
-                        glm::vec3 targetEuler = glm::degrees(glm::eulerAngles(alignQuat));
-                        dynObj->sceneNode->GetTransform().setRotation(targetEuler);
-
-                        // 计算合力
-                        // 计算力在法线方向
-                        glm::vec3 forceGravity = GRAVITY * dynObj->physicsModel->m_mass;
-                        glm::vec3 forceNormal = -(glm::dot(forceGravity, groundNormal)) * groundNormal;
-                        dynObj->physicsModel->AddForce(forceNormal);
-
-                        // 计算阻力
-                        float us = terrain->m_us;
-                        float uk = terrain->m_uk;
-                        float velocityEpsilon = 0.01f;
-                        float forceNormalMagnitude = glm::length(forceNormal);
-                        glm::vec3 currentSpeed = dynObj->physicsModel->m_velocity;
-                        float speedMagnitude = glm::length(currentSpeed);
-
-                        // 动摩擦力
-                        if (speedMagnitude > velocityEpsilon) {
-                            glm::vec3 moveDir = glm::normalize(currentSpeed);
-                            glm::vec3 forceFriction = -moveDir * (forceNormalMagnitude * uk);
-                            float frictionAccel = (forceNormalMagnitude * uk) / dynObj->physicsModel->m_mass;
-                            if (frictionAccel * deltaTime >= speedMagnitude) {
-                                dynObj->physicsModel->m_velocity = glm::vec3(0.0f);
-                            } else {
-                                dynObj->physicsModel->AddForce(forceFriction);
-                            }
-                        }
-                        // 静摩擦力
-                        else {
-                            glm::vec3 forceTangential = forceGravity + forceNormal;
-                            float tangentialMagnitude = glm::length(forceTangential);
-
-                            // 计算最大静摩擦力极限
-                            float maxStaticFriction = forceNormalMagnitude * us;
-
-                            // 比较下滑力与极限静摩擦力
-                            if (tangentialMagnitude <= maxStaticFriction) {
-                                dynObj->physicsModel->AddForce(-forceTangential);
-                                dynObj->physicsModel->m_velocity = glm::vec3(0.0f);
-                            } else {
-                                if (tangentialMagnitude > 0.0001f) {
-                                    glm::vec3 slideDir = forceTangential / tangentialMagnitude;
-                                    glm::vec3 kineticFriction = -slideDir * (forceNormalMagnitude * uk);
-                                    dynObj->physicsModel->AddForce(kineticFriction);
-                                }
+                        // 比较下滑力与极限静摩擦力
+                        if (tangentialMagnitude <= maxStaticFriction) {
+                            dynObj->physicsModel->AddForce(-forceTangential);
+                            dynObj->physicsModel->m_velocity = glm::vec3(0.0f);
+                        } else {
+                            if (tangentialMagnitude > 0.0001f) {
+                                glm::vec3 slideDir = forceTangential / tangentialMagnitude;
+                                glm::vec3 kineticFriction = -slideDir * (forceNormalMagnitude * uk);
+                                dynObj->physicsModel->AddForce(kineticFriction);
                             }
                         }
                     }
@@ -205,6 +197,31 @@ public:
             }
         }
 
+        // 添加弹簧力
+        for (Ressort* ressort : resorts) {
+            GameObjet* objetStart = ressort->m_objetStart;
+            GameObjet* objetEnd = ressort->m_objetEnd;
+            glm::vec3 objetStartPosition = objetStart->physicsModel->m_physicsPosition;
+            glm::vec3 objetEndPosition = objetEnd->physicsModel->m_physicsPosition;
+
+            // 计算弹力方向, 从端点指向原点
+            glm::vec3 forceDirection = objetEndPosition - objetStartPosition;
+            forceDirection = glm::normalize(forceDirection);
+            float currentLength = glm::length(forceDirection);  //弹簧现长
+            float distortLength = currentLength - ressort->m_length;
+
+            // 计算弹力大小
+            float forceMagnitude = ressort->m_k * distortLength;
+
+            // 应用弹力
+            if (!objetStart->physicsModel->m_isFixed) {
+                objetStart->physicsModel->AddForce(-forceDirection * forceMagnitude);
+            }
+            if (!objetEnd->physicsModel->m_isFixed) {
+                objetEnd->physicsModel->AddForce(forceDirection * forceMagnitude);
+            }
+        }
+
         // 物理更新
         for (GameObjet* obj : dynamicObjects) {
             datalogger->sample(deltaTime);
@@ -243,6 +260,61 @@ public:
 
     void setDataLogger(DataLogger* _dataLogger) {
         datalogger = _dataLogger;
+    }
+
+    ContactInfo CheckCollision(GameObjet* dynObj, GameObjet* statObj) {
+        ContactInfo contact_info;
+        ShapeType typeDyn = dynObj->physicsModel->m_shape->GetType();
+        ShapeType typeStat = statObj->physicsModel->m_shape->GetType();
+
+        float contactTolerance = 0.01f;
+        glm::vec3 WorldUp(0.f,1.f,0.f);
+
+        // 方块与地形
+        if (typeDyn == ShapeType::CUBE && typeStat == ShapeType::TERRAIN) {
+            CubeShape* cube  = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
+            TerrainSystem* terrain = static_cast<TerrainSystem *>(statObj);
+
+            float groundY = terrain->GetHeightAt(dynObj->physicsModel->m_physicsPosition.x, dynObj->physicsModel->m_physicsPosition.z);
+            glm::vec3 groundNormal = terrain->GetNormalAt(dynObj->physicsModel->m_physicsPosition.x, dynObj->physicsModel->m_physicsPosition.z);
+
+            float distToPlane = (dynObj->physicsModel->m_physicsPosition.y - groundY) * groundNormal.y;
+            float radius = cube->m_halfExtent;
+
+            if (distToPlane < radius + contactTolerance) {
+                contact_info.hasCollision = true;
+                contact_info.normal = groundNormal;
+                contact_info.penetrationDepth = (distToPlane < radius) ? (radius - distToPlane) : 0.0f;
+                contact_info.us = terrain->m_us;
+                contact_info.uk = terrain->m_uk;
+
+                // 更新方块的角度
+                glm::quat alignQuat = glm::rotation(WorldUp, groundNormal);
+                dynObj->sceneNode->GetTransform().setRotation(glm::degrees(glm::eulerAngles(alignQuat)));
+            }
+        }
+
+        // 球体与地形
+        else if (typeDyn == ShapeType::SPHERE && typeStat == ShapeType::TERRAIN) {
+            SphereShape* sphere = static_cast<SphereShape*>(dynObj->physicsModel->m_shape);
+            TerrainSystem* terrain = static_cast<TerrainSystem *>(statObj);
+
+            float groundY = terrain->GetHeightAt(dynObj->physicsModel->m_physicsPosition.x, dynObj->physicsModel->m_physicsPosition.z);
+            glm::vec3 groundNormal = terrain->GetNormalAt(dynObj->physicsModel->m_physicsPosition.x, dynObj->physicsModel->m_physicsPosition.z);
+
+            float distToPlane = (dynObj->physicsModel->m_physicsPosition.y - groundY) * groundNormal.y;
+            float radius = sphere->m_radius;
+
+            if (distToPlane < radius + contactTolerance) {
+                contact_info.hasCollision = true;
+                contact_info.normal = groundNormal;
+                contact_info.penetrationDepth = (distToPlane < radius) ? (radius - distToPlane) : 0.0f;
+                contact_info.us = terrain->m_us;
+                contact_info.uk = terrain->m_uk;
+            }
+        }
+
+        return contact_info;
     }
 
 };

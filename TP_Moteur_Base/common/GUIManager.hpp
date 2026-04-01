@@ -5,6 +5,7 @@
 #include "CubeObjet.hpp"
 #include "GameManager.hpp"
 #include "NormalObjet.hpp"
+#include "SphereObjet.hpp"
 #include "TerrainSystem.hpp"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -22,13 +23,15 @@ public:
         ImGui_ImplOpenGL3_Init("#version 330");
     }
 
-    void setTarget(CubeObjet* cube, TerrainSystem* terrain, Camera* camera, NormalObjet* earth, NormalObjet* moon, GameManager* gameManager) {
+    void setTarget(CubeObjet* cube, TerrainSystem* terrain, Camera* camera, NormalObjet* earth, NormalObjet* moon, GameManager* gameManager, Ressort* ressort, SphereObjet* sphere) {
         m_cube = cube;
         m_terrain = terrain;
         m_camera = camera;
         m_earth = earth;
         m_moon = moon;
         m_gameManager = gameManager;
+        m_ressort = ressort;
+        m_sphere = sphere;
     }
 
     void draw() {
@@ -62,10 +65,60 @@ public:
                 ImGui::EndTabItem();
             }
 
+            if (m_ressort && ImGui::BeginTabItem("Ressort")) {
+                DrawRessortGUI(*m_ressort);
+                ImGui::EndTabItem();
+            }
+
             ImGui::EndTabBar();
         }
 
         ImGui::End();
+    }
+
+    void DrawRessortGUI(Ressort& ressort) {
+
+        if (ImGui::CollapsingHeader("Ressort", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+            ImGui::PushID("Ressort");
+            ImGui::TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "Ressort Parameters");
+            ImGui::Separator();
+
+            // 控制弹簧长度
+            ImGui::DragFloat("Length", &ressort.m_length, 1.0f, 1.0f, 100.0f, "%.1f");
+            ImGui::DragFloat("K", &ressort.m_k, 1.0f, 1.0f, 10000.0f, "%.1f");
+            ImGui::PopID(); // 弹出地球的 ID
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            // 月球控制面板
+            ImGui::PushID("Moon with ressort"); // 压入月球的 ID
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Moon (Orbiting Body)");
+            ImGui::Separator();
+
+            // 控制质量
+            ImGui::DragFloat("Mass", &ressort.m_objetEnd->physicsModel->m_mass, 5.0f, 1.0f, 10000.0f, "%.1f");
+
+            // 控制位置
+            if (ImGui::DragFloat3("Position", &ressort.m_objetEnd->physicsModel->m_physicsPosition.x, 0.1f)) {
+                ressort.m_objetEnd->SyncTransform();
+            }
+
+            // 控制速度
+            ImGui::DragFloat3("Velocity", &ressort.m_objetEnd->physicsModel->m_velocity.x, 0.05f);
+
+            ImGui::PopID(); // 弹出月球的 ID
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            if (ImGui::Button("Reset Positions & Velocity", ImVec2(-1, 0))) {
+                m_gameManager->StopSimulationStatus();
+                ressort.m_objetEnd->physicsModel->m_physicsPosition = glm::vec3(0.f, 25.f, 0.f);
+                ressort.m_objetEnd->physicsModel->m_velocity = glm::vec3(0.f, 0.f, 0.f);
+            }
+        }
     }
 
     void DrawPlaneteGUI(NormalObjet& earth, NormalObjet& moon) {
@@ -139,8 +192,6 @@ public:
                 moon.SyncTransform();
             }
         }
-
-
     }
 
     void DrawCameraGUI(Camera& camera) {
@@ -300,6 +351,8 @@ private:
     NormalObjet* m_earth = nullptr;
     NormalObjet* m_moon = nullptr;
     GameManager* m_gameManager = nullptr;
+    Ressort* m_ressort = nullptr;
+    SphereObjet* m_sphere = nullptr;
 };
 
 

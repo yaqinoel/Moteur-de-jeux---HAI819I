@@ -24,6 +24,7 @@
 
 #include "common/GUIManager.hpp"
 #include "common/NormalObjet.hpp"
+#include "common/SphereObjet.hpp"
 #include "common/WaterSystem.hpp"
 #include "common/WaterSystem.hpp"
 
@@ -85,6 +86,9 @@ WaterSystem* waterTerrain = nullptr;
 CubeObjet* fallingCube = nullptr;
 NormalObjet* moon = nullptr;
 NormalObjet* earth = nullptr;
+NormalObjet* moonRessort = nullptr;
+Ressort* ressort = nullptr;
+SphereObjet* sphere = nullptr;
 
 // 日志记录器
 DataLogger* dataLogger = nullptr;
@@ -166,7 +170,7 @@ int main(void) {
   // 初始化地形系统
   terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
   fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 600.0f, glm::vec3(7.5f, 10.5f, -3.0f));
-  waterTerrain = new WaterSystem(gameManager.sceneManager, &waterShader, 16);
+
   earth = new NormalObjet(gameManager.sceneManager, &planeteShader, "./resources/models/planete/earth.obj", 3.f,1.f, glm::vec3(0.,45.,0.));
   earth->physicsModel->m_isFixed = true;
   earth->physicsModel->m_isGravity = false;
@@ -175,18 +179,29 @@ int main(void) {
   moon->physicsModel->m_isGravity = false;
   moon->physicsModel->m_velocity = glm::vec3(0.f, 0.f, 100.f);
 
+  sphere = new SphereObjet(gameManager.sceneManager, &planeteShader, 0.5f, 600.0f, glm::vec3(7.5f, 13.5f, -3.0f));
+
+  moonRessort = new NormalObjet(gameManager.sceneManager, &planeteShader,"./resources/models/planete/moon.obj", 1.f, 1.f, glm::vec3(0.,30.,0.));
+  ressort = new Ressort(earth,moonRessort, 10, 1.5f);
+
+  waterTerrain = new WaterSystem(gameManager.sceneManager, &waterShader, 16);
+
   gameManager.AddStaticGameObject(terrainSystem);
   gameManager.AddDynamicGameObject(fallingCube);
 
   gameManager.AddStaticGameObject(earth);
   gameManager.AddDynamicGameObject(moon);
 
+  gameManager.AddResort(ressort);
+  gameManager.AddDynamicGameObject(moonRessort);
+  gameManager.AddDynamicGameObject(sphere);
+
   fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
+  sphere->SetVelocity(5.0f * glm::normalize(glm::vec3(-4.0f, 2.0f, 2.0f)));
   dataLogger = new DataLogger(fallingCube);
   gameManager.setDataLogger(dataLogger);
 
-  guiManager->setTarget(fallingCube, terrainSystem, &camera, earth, moon, &gameManager);
-
+  guiManager->setTarget(fallingCube, terrainSystem, &camera, earth, moon, &gameManager, ressort, sphere);
 
   Time::intialize();
 
@@ -321,6 +336,8 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_R) {
       fallingCube->ResetStatus();
       fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
+      sphere->ResetStatus();
+      sphere->SetVelocity(5.0f * glm::normalize(glm::vec3(-4.0f, 2.0f, 2.0f)));
       gameManager.StopSimulationStatus();
     }
 
