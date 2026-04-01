@@ -90,7 +90,7 @@ public:
             // 平移运动积分
             glm::vec3 acceleation = m_force / m_mass;
             m_velocity += acceleation * deltaTime;
-            m_velocity *= 0.99f;
+            // m_velocity *= 0.99f;
             // 更新位置
             m_physicsPosition += m_velocity * deltaTime;
 

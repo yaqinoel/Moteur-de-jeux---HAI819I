@@ -33,9 +33,14 @@ public:
         }
         if (physicsModel->isDynamic()) {
             sceneNode->GetTransform().setTranslation(physicsModel->m_physicsPosition);
-
+            glm::vec3 eulerRadians = glm::eulerAngles(physicsModel->m_orientation);
+            glm::vec3 eulerDegrees = glm::degrees(eulerRadians);
+            sceneNode->GetTransform().setRotation(eulerDegrees);
         }else {
             physicsModel->m_physicsPosition = sceneNode->GetTransform().getTranslation();
+            glm::vec3 eulerDegrees = sceneNode->GetTransform().getRotation();
+            glm::vec3 eulerRadians = glm::radians(eulerDegrees);
+            physicsModel->m_orientation = glm::quat(eulerRadians);
         }
     }
 
