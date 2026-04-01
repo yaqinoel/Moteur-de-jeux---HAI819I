@@ -71,7 +71,7 @@ std::string windowTitle = "Moteur de jeux";
 bool isWireframe = false;
 
 // 相机初始化参数
-Camera camera(glm::vec3(40.f, 60.f, 55.f));
+Camera camera(glm::vec3(5.f, 15.f, 40.f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -179,7 +179,7 @@ int main(void) {
   moon->physicsModel->m_isGravity = false;
   moon->physicsModel->m_velocity = glm::vec3(0.f, 0.f, 100.f);
 
-  sphere = new SphereObjet(gameManager.sceneManager, &planeteShader, 0.5f, 600.0f, glm::vec3(7.5f, 13.5f, -3.0f));
+  sphere = new SphereObjet(gameManager.sceneManager, &planeteShader, 1.f, 1000.0f, glm::vec3(7.5f, 13.5f, -3.0f));
 
   moonRessort = new NormalObjet(gameManager.sceneManager, &planeteShader,"./resources/models/planete/moon.obj", 1.f, 1.f, glm::vec3(0.,30.,0.));
   ressort = new Ressort(earth,moonRessort, 10, 1.5f);

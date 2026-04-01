@@ -133,51 +133,9 @@ public:
             }
         }
 
-        // 浮力检测
-        float water_level = 0.f;
-        float rou_water = 1000.f;
-        float rou_air = 1.f;
-        glm::vec3 water_normal = glm::vec3(0.f,1.f,0.f);
+        // 浮力检测和计算
         for (GameObjet* dynObj : dynamicObjects) {
-            // 检测物体是否入水
-            CubeShape* dynCube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
-            glm::vec3 objetPosition = dynObj->physicsModel->m_physicsPosition;
-            float half_extends = dynCube->m_halfExtent;
-            // 物体中心落水
-            if (objetPosition.y - half_extends < water_level) {
-                // 计算浮力
-                float volume = 0.f;
-                float height_in_water = 2 * half_extends;
-                if (objetPosition.y + half_extends > water_level) {
-                    height_in_water = half_extends + (water_level - objetPosition.y);
-                }
-                volume = 4 * half_extends * half_extends * height_in_water;
-                glm::vec3 flottaisonForce = -rou_water * GRAVITY * volume *  water_normal;
-                dynObj->physicsModel->AddForce(flottaisonForce);
-
-                // 计算水的阻力
-                glm::vec3 currentVelocity = dynObj->physicsModel->m_velocity;
-                float submergedRatio = height_in_water / (2.0f * half_extends);
-                // 流体阻力系数
-                float fluidDragCoefficient = 100.0f;
-                // 简单的线性阻力模型阻力方向与速度相反
-                glm::vec3 dragForce = -fluidDragCoefficient * submergedRatio * currentVelocity;
-                dynObj->physicsModel->AddForce(dragForce);
-
-                // 调整旋转姿态
-                glm::vec3 currentEuler = dynObj->sceneNode->GetTransform().getRotation();
-                glm::quat currentQuat = glm::quat(glm::radians(currentEuler));
-                glm::vec3 targetEuler = glm::vec3(0.0f, currentEuler.y, 0.0f);
-                glm::quat targetQuat = glm::quat(glm::radians(targetEuler));
-
-                // 根据浸入深度计算插值权重
-                float alignSpeed = 5.0f;
-                float blendFactor = glm::clamp(submergedRatio * alignSpeed * deltaTime, 0.0f, 1.0f);
-                glm::quat newQuat = glm::slerp(currentQuat, targetQuat, blendFactor);
-
-                // 将新姿态应用回物体
-                dynObj->sceneNode->GetTransform().setRotation(glm::degrees(glm::eulerAngles(newQuat)));
-            }
+            CheckFloatage(dynObj, deltaTime);
         }
 
         // 添加万有引力和重力
@@ -315,6 +273,83 @@ public:
         }
 
         return contact_info;
+    }
+
+    void CheckFloatage(GameObjet* dynObj, float deltaTime) {
+        float water_level = 0.f;
+        float rou_water = 1000.f;
+        glm::vec3 water_normal = glm::vec3(0.f,1.f,0.f);
+
+        glm::vec3 objetPosition = dynObj->physicsModel->m_physicsPosition;
+        ShapeType type = dynObj->physicsModel->m_shape->GetType();
+
+        // 核心物理数据
+        bool isTouchingWater = false;
+        float volume = 0.f;
+        float submergedRatio = 0.f;
+
+        // 根据不同物体计算排开水体积
+        if (type == ShapeType::CUBE) {
+            CubeShape* cube = static_cast<CubeShape*>(dynObj->physicsModel->m_shape);
+            float r = cube->m_halfExtent;
+            float bottomY = objetPosition.y - r;
+
+            if (bottomY < water_level) {
+                isTouchingWater = true;
+                float height_in_water = 2.0f * r; // 默认全淹没
+                if (objetPosition.y + r > water_level) {
+                    height_in_water = water_level - bottomY; // 部分淹没
+                }
+                // 立方体排开水体积 = 底面积 * 高
+                volume = (4.0f * r * r) * height_in_water;
+                submergedRatio = height_in_water / (2.0f * r);
+            }
+        }
+        else if (type == ShapeType::SPHERE) {
+            SphereShape* sphere = static_cast<SphereShape*>(dynObj->physicsModel->m_shape);
+            float R = sphere->m_radius;
+            float bottomY = objetPosition.y - R;
+
+            if (bottomY < water_level) {
+                isTouchingWater = true;
+                float h = 2.0f * R; // 默认全淹没
+                if (objetPosition.y + R > water_level) {
+                    h = water_level - bottomY; // 浸入水下的深度
+                }
+                float PI = glm::pi<float>();
+                volume = (PI * h * h / 3.0f) * (3.0f * R - h);
+                submergedRatio = h / (2.0f * R);
+            }
+        }
+
+        // 统一计算浮力
+        if (isTouchingWater) {
+            float g_magnitude = std::abs(GRAVITY.y);
+
+            // 阿基米德浮力
+            float buoyancyMagnitude = rou_water * g_magnitude * volume;
+            glm::vec3 flottaisonForce = buoyancyMagnitude * water_normal;
+            dynObj->physicsModel->AddForce(flottaisonForce);
+
+            // 流体阻力
+            float fluidDragCoefficient = 1000.0f;
+            glm::vec3 currentVelocity = dynObj->physicsModel->m_velocity;
+            glm::vec3 dragForce = -fluidDragCoefficient * submergedRatio * currentVelocity;
+            dynObj->physicsModel->AddForce(dragForce);
+
+            // 姿态扶正 (如果需要的话
+            if (type == ShapeType::CUBE) {
+                glm::vec3 currentEuler = dynObj->sceneNode->GetTransform().getRotation();
+                glm::quat currentQuat = glm::quat(glm::radians(currentEuler));
+                glm::vec3 targetEuler = glm::vec3(0.0f, currentEuler.y, 0.0f);
+                glm::quat targetQuat = glm::quat(glm::radians(targetEuler));
+
+                float alignSpeed = 5.0f;
+                float blendFactor = glm::clamp(submergedRatio * alignSpeed * deltaTime, 0.0f, 1.0f);
+                glm::quat newQuat = glm::slerp(currentQuat, targetQuat, blendFactor);
+                dynObj->sceneNode->GetTransform().setRotation(glm::degrees(glm::eulerAngles(newQuat)));
+            }
+        }
     }
 
 };
