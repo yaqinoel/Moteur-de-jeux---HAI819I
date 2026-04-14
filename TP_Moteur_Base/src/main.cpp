@@ -71,7 +71,7 @@ std::string windowTitle = "Moteur de jeux";
 bool isWireframe = false;
 
 // 相机初始化参数
-Camera camera(glm::vec3(5.f, 15.f, 40.f));
+Camera camera(glm::vec3(0.f, 220.f, 630.f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -169,7 +169,7 @@ int main(void) {
 
   // 初始化地形系统
   terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
-  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 0.5f, 600.0f, glm::vec3(7.5f, 10.5f, -3.0f));
+  fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 10.f, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f));
 
   earth = new NormalObjet(gameManager.sceneManager, &planeteShader, "./resources/models/planete/earth.obj", 3.f,1.f, glm::vec3(0.,45.,0.));
   earth->physicsModel->m_isFixed = true;
@@ -186,17 +186,17 @@ int main(void) {
 
   waterTerrain = new WaterSystem(gameManager.sceneManager, &waterShader, 16);
 
-  gameManager.AddStaticGameObject(terrainSystem);
+  // gameManager.AddStaticGameObject(terrainSystem);
   gameManager.AddDynamicGameObject(fallingCube);
 
-  gameManager.AddStaticGameObject(earth);
-  gameManager.AddDynamicGameObject(moon);
+  // gameManager.AddStaticGameObject(earth);
+  // gameManager.AddDynamicGameObject(moon);
 
-  gameManager.AddResort(ressort);
-  gameManager.AddDynamicGameObject(moonRessort);
-  gameManager.AddDynamicGameObject(sphere);
+  // gameManager.AddResort(ressort);
+  // gameManager.AddDynamicGameObject(moonRessort);
+  // gameManager.AddDynamicGameObject(sphere);
 
-  fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
+  fallingCube->SetVelocity(glm::vec3(0.f, 0.f, 0.f));
   sphere->SetVelocity(5.0f * glm::normalize(glm::vec3(-4.0f, 2.0f, 2.0f)));
   dataLogger = new DataLogger(fallingCube);
   gameManager.setDataLogger(dataLogger);
@@ -207,7 +207,8 @@ int main(void) {
 
   do {
     Time::Update();
-    float dt = Time::DeltaTime;
+    // float dt = Time::DeltaTime;
+    float dt = 1.0f;
 
     inputManager.Update(window);
 
@@ -335,7 +336,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
     if (key == GLFW_KEY_R) {
       fallingCube->ResetStatus();
-      fallingCube->SetVelocity(5.0f * glm::normalize((-camera.m_Right + glm::vec3(0.0f, 1.0f, 0.0f))));
+      fallingCube->SetVelocity(glm::vec3(0.f, 0.f, 0.f));
       sphere->ResetStatus();
       sphere->SetVelocity(5.0f * glm::normalize(glm::vec3(-4.0f, 2.0f, 2.0f)));
       gameManager.StopSimulationStatus();

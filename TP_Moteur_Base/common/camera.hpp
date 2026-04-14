@@ -15,8 +15,8 @@ class SceneNode;
 enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
 
 // 默认相机参数常量
-const float YAW = -107.0f;
-const float PITCH = -12.3f;
+const float YAW = -90.0f;
+const float PITCH = -30.3f;
 const float ROLL = 0.0f;
 const float SPEED = 10.0f;
 const float SENSITIVITY = 0.1f;
