@@ -134,9 +134,9 @@ public:
         }
 
         // 浮力检测和计算
-        for (GameObjet* dynObj : dynamicObjects) {
-            CheckFloatage(dynObj, deltaTime);
-        }
+        // for (GameObjet* dynObj : dynamicObjects) {
+        //     CheckFloatage(dynObj, deltaTime);
+        // }
 
         // 添加万有引力和重力
         for (GameObjet* obj : dynamicObjects) {
@@ -180,9 +180,11 @@ public:
             }
         }
 
+        // 模拟数据记录器
+        datalogger->sample(deltaTime);
+
         // 物理更新
         for (GameObjet* obj : dynamicObjects) {
-            datalogger->sample(deltaTime);
             // 迭代位置
             obj->physicsModel->Integrate(deltaTime);
         }

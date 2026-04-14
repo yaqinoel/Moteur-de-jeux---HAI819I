@@ -7,6 +7,12 @@ class ColliderShape;
 
 class PhysicsModel {
 public:
+    enum class IntegrationType {
+        ExplicitEuler,
+        SemiImplicitEuler,
+        Verlet,
+        Midpoint
+    };
 
     // -- 物理属性
     float m_mass;
@@ -31,13 +37,21 @@ public:
     // 碰撞形状
     ColliderShape* m_shape;
 
+    // -- Verlet积分变量
+    glm::vec3 m_previousPosition;
+    bool m_isFirstUpdate;
+
+    // 积分类型
+    IntegrationType m_integrationMethod;
 
 
     // 构造函数
-    PhysicsModel(ColliderShape* shape, float mass, glm::vec3 startPos)
+    PhysicsModel(ColliderShape* shape, float mass, glm::vec3 startPos, IntegrationType method = IntegrationType::SemiImplicitEuler)
         : m_shape(shape),
           m_mass(mass),
           m_physicsPosition(startPos),
+          m_previousPosition(startPos),
+          m_isFirstUpdate(true),
           m_velocity(glm::vec3(0.0f)),
           m_force(glm::vec3(0.0f)),
           m_isFixed(false),
@@ -88,18 +102,47 @@ public:
     void Integrate(float deltaTime){
         if (isDynamic()) {
             // 平移运动积分
-            glm::vec3 acceleation = m_force / m_mass;
-            m_velocity += acceleation * deltaTime;
-            // m_velocity *= 0.99f;
-            // 更新位置
-            m_physicsPosition += m_velocity * deltaTime;
+            glm::vec3 acceleration = m_force / m_mass;
+
+            switch (m_integrationMethod) {
+                case IntegrationType::ExplicitEuler: {
+                    glm::vec3 currentVelocity = m_velocity;
+                    m_velocity += acceleration * deltaTime;
+                    m_physicsPosition += currentVelocity * deltaTime;
+                    break;
+                }
+                case IntegrationType::SemiImplicitEuler: {
+                    m_velocity += acceleration * deltaTime;
+                    m_physicsPosition += m_velocity * deltaTime;
+                    break;
+                }
+                case IntegrationType::Midpoint: {
+                    glm::vec3 midVelocity = m_velocity + acceleration * (deltaTime * 0.5f);
+                    m_physicsPosition += midVelocity * deltaTime;
+                    m_velocity += acceleration * deltaTime;
+                    break;
+                }
+                case IntegrationType::Verlet: {
+                    if (m_isFirstUpdate) {
+                        m_previousPosition = m_physicsPosition - m_velocity * deltaTime + 0.5f * acceleration * (deltaTime * deltaTime);
+                        m_isFirstUpdate = false;
+                    }
+
+                    glm::vec3 tempPosition = m_physicsPosition;
+                    m_physicsPosition = 2.0f * m_physicsPosition - m_previousPosition + acceleration * (deltaTime * deltaTime);
+                    m_previousPosition = tempPosition;
+
+                    m_velocity = (m_physicsPosition - m_previousPosition) / deltaTime;
+                    break;
+                }
+            }
 
             // 旋转运动积分
             glm::mat3 rotationMatrix = glm::mat3_cast(m_orientation);
             m_invInertiaTensorWorld = rotationMatrix * m_invInertiaTensorBody * glm::transpose(rotationMatrix);
             glm::vec3 angularAcceleration = m_invInertiaTensorWorld * m_torque;
             m_angularVelocity += angularAcceleration * deltaTime;
-            m_angularVelocity *= 0.98f;
+            m_angularVelocity *= 0.99f;
             float angularSpeed = glm::length(m_angularVelocity);
             if (angularSpeed > 0.0001f) { // 避免零除
                 glm::vec3 rotationAxis = m_angularVelocity / angularSpeed;
@@ -108,6 +151,10 @@ public:
                 glm::quat deltaQuat = glm::angleAxis(rotationAngle, rotationAxis);
                 m_orientation = deltaQuat * m_orientation;
                 m_orientation = glm::normalize(m_orientation);
+            }
+
+            if (m_isGravity) {
+                // m_velocity *= 0.99f;
             }
 
             m_force = glm::vec3(0.0f);
