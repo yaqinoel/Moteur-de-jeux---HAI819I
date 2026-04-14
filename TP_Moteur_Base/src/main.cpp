@@ -171,7 +171,7 @@ int main(void) {
   terrainSystem = new TerrainSystem(gameManager.sceneManager, &terrainShader,16);
   fallingCube = new CubeObjet(gameManager.sceneManager, &objetShader, 10.f, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f));
 
-  earth = new NormalObjet(gameManager.sceneManager, &planeteShader, "./resources/models/planete/earth.obj", 3.f,1.f, glm::vec3(0.,45.,0.));
+  earth = new NormalObjet(gameManager.sceneManager, &planeteShader, "./resources/models/planete/earth.obj", 3.f,1.f, glm::vec3(0.,0.,0.));
   earth->physicsModel->m_isFixed = true;
   earth->physicsModel->m_isGravity = false;
 
@@ -181,24 +181,31 @@ int main(void) {
 
   sphere = new SphereObjet(gameManager.sceneManager, &planeteShader, 1.f, 1000.0f, glm::vec3(7.5f, 13.5f, -3.0f));
 
-  moonRessort = new NormalObjet(gameManager.sceneManager, &planeteShader,"./resources/models/planete/moon.obj", 1.f, 1.f, glm::vec3(0.,30.,0.));
-  ressort = new Ressort(earth,moonRessort, 10, 1.5f);
+  moonRessort = new NormalObjet(gameManager.sceneManager, &planeteShader,"./resources/models/planete/moon.obj", 1.f, 10.f, glm::vec3(0.,30.,0.));
+  ressort = new Ressort(earth,moonRessort, 10.f, 1.f);
 
   waterTerrain = new WaterSystem(gameManager.sceneManager, &waterShader, 16);
 
   // gameManager.AddStaticGameObject(terrainSystem);
-  gameManager.AddDynamicGameObject(fallingCube);
+  // gameManager.AddDynamicGameObject(fallingCube);
 
-  // gameManager.AddStaticGameObject(earth);
+  gameManager.AddStaticGameObject(earth);
   // gameManager.AddDynamicGameObject(moon);
 
-  // gameManager.AddResort(ressort);
-  // gameManager.AddDynamicGameObject(moonRessort);
+  gameManager.AddResort(ressort);
+  gameManager.AddDynamicGameObject(moonRessort);
   // gameManager.AddDynamicGameObject(sphere);
 
   fallingCube->SetVelocity(glm::vec3(0.f, 0.f, 0.f));
   sphere->SetVelocity(5.0f * glm::normalize(glm::vec3(-4.0f, 2.0f, 2.0f)));
-  dataLogger = new DataLogger(fallingCube);
+
+  // fallingCube->physicsModel->m_integrationMethod = PhysicsModel::IntegrationType::ExplicitEuler;
+  // dataLogger = new DataLogger(fallingCube);
+
+  moonRessort->physicsModel->m_isGravity = false;
+  moonRessort->physicsModel->SetVelocity(glm::vec3(0.f, 0.f, 0.f));
+  moonRessort->physicsModel->m_integrationMethod = PhysicsModel::IntegrationType::Verlet;
+  dataLogger = new DataLogger(moonRessort);
   gameManager.setDataLogger(dataLogger);
 
   guiManager->setTarget(fallingCube, terrainSystem, &camera, earth, moon, &gameManager, ressort, sphere);
@@ -344,7 +351,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
     // 保存模拟数据
     if (key == GLFW_KEY_K) {
-      dataLogger->exportToCSV("./outputs/simulationData/data.csv");
+      dataLogger->exportToCSV("./outputs/simulationData/ressort_data.csv");
     }
 
   }

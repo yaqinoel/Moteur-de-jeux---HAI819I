@@ -51,6 +51,7 @@ public:
           m_mass(mass),
           m_physicsPosition(startPos),
           m_previousPosition(startPos),
+          m_integrationMethod(method),
           m_isFirstUpdate(true),
           m_velocity(glm::vec3(0.0f)),
           m_force(glm::vec3(0.0f)),

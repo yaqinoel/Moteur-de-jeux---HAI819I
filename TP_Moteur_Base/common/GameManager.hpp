@@ -139,21 +139,21 @@ public:
         // }
 
         // 添加万有引力和重力
-        for (GameObjet* obj : dynamicObjects) {
-            if (obj->physicsModel && obj->physicsModel->isDynamic() && !obj->physicsModel->m_isGravity && !obj->physicsModel->m_isFixed) {
-                for (GameObjet* statObj : staticObjects) {
-                    float mass = statObj->physicsModel->m_mass;
-                    glm::vec3 direction = obj->physicsModel->m_physicsPosition - statObj->physicsModel->m_physicsPosition;
-                    glm::vec3 universalForce = GRAVITY.y * mass * obj->physicsModel-> m_mass * direction;
-                    obj->physicsModel->AddForce(universalForce);
-                }
-            }
-
-            // 添加重力
-            if (obj->physicsModel && obj->physicsModel->isDynamic() && obj->physicsModel->m_isGravity) {
-                obj->physicsModel->AddForce(GRAVITY * obj->physicsModel->m_mass);
-            }
-        }
+        // for (GameObjet* obj : dynamicObjects) {
+        //     if (obj->physicsModel && obj->physicsModel->isDynamic() && !obj->physicsModel->m_isGravity && !obj->physicsModel->m_isFixed) {
+        //         for (GameObjet* statObj : staticObjects) {
+        //             float mass = statObj->physicsModel->m_mass;
+        //             glm::vec3 direction = obj->physicsModel->m_physicsPosition - statObj->physicsModel->m_physicsPosition;
+        //             glm::vec3 universalForce = GRAVITY.y * mass * obj->physicsModel-> m_mass * direction;
+        //             obj->physicsModel->AddForce(universalForce);
+        //         }
+        //     }
+        //
+        //     // 添加重力
+        //     if (obj->physicsModel && obj->physicsModel->isDynamic() && obj->physicsModel->m_isGravity) {
+        //         obj->physicsModel->AddForce(GRAVITY * obj->physicsModel->m_mass);
+        //     }
+        // }
 
         // 添加弹簧力
         for (Ressort* ressort : resorts) {
@@ -163,20 +163,26 @@ public:
             glm::vec3 objetEndPosition = objetEnd->physicsModel->m_physicsPosition;
 
             // 计算弹力方向, 从端点指向原点
-            glm::vec3 forceDirection = objetEndPosition - objetStartPosition;
-            forceDirection = glm::normalize(forceDirection);
-            float currentLength = glm::length(forceDirection);  //弹簧现长
-            float distortLength = currentLength - ressort->m_length;
+            glm::vec3 forceVector = objetEndPosition - objetStartPosition;
+            float currentLength = glm::length(forceVector);  //弹簧现长
 
+            glm::vec3 forceDirection(0.0f);
+            if (currentLength > 0.0001f) {
+                forceDirection = forceVector / currentLength;
+            } else {
+                continue;
+            }
+
+            float distortLength = currentLength - ressort->m_length;
             // 计算弹力大小
             float forceMagnitude = ressort->m_k * distortLength;
 
             // 应用弹力
             if (!objetStart->physicsModel->m_isFixed) {
-                objetStart->physicsModel->AddForce(-forceDirection * forceMagnitude);
+                objetStart->physicsModel->AddForce(forceDirection * forceMagnitude);
             }
             if (!objetEnd->physicsModel->m_isFixed) {
-                objetEnd->physicsModel->AddForce(forceDirection * forceMagnitude);
+                objetEnd->physicsModel->AddForce(-forceDirection * forceMagnitude);
             }
         }
 

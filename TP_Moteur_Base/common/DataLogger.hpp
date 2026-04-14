@@ -4,6 +4,10 @@
 #include "SimulationData.hpp"
 
 const glm::vec3 GRAVITY = glm::vec3(0.0f, -9.81f, 0.0f);
+float k = 1.f;       // 刚度
+float m = 10.f; // 质量
+float P_y = 0.0f;    // 固定点 P 的高度
+float l0 = 10.0f;
 
 class DataLogger {
 public:
@@ -38,8 +42,14 @@ public:
     }
 
     glm::vec3 getAnalytiquePosition() {
-        glm::vec3 pa(0.f);
-        return pa = startPos + startVel * current_time + (1/2.f) * GRAVITY * current_time * current_time;
+        // glm::vec3 pa(0.f);
+        // return pa = startPos + startVel * current_time + (1/2.f) * GRAVITY * current_time * current_time;
+        float omega = std::sqrt(k / m);
+        float p_eq = P_y - l0;
+        float A = startPos.y - p_eq;
+        float current_y = p_eq + A * std::cos(omega * current_time);
+        glm::vec3 pa(startPos.x, current_y, startPos.z);
+        return pa;
     }
 
 private:

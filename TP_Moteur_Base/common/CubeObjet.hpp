@@ -28,7 +28,7 @@ public:
 
         // 物理数据初始化
         CubeShape* cubeShape = new CubeShape(m_halfWidth);
-        physicsModel = new PhysicsModel(cubeShape, m_mass,sceneNode->GetTransform().getTranslation() );
+        physicsModel = new PhysicsModel(cubeShape, m_mass,sceneNode->GetTransform().getTranslation());
 
         // 同步状态
         SyncTransform();
